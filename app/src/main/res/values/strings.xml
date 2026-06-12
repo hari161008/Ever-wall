@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Ever Wall</string>
+    <string name="editor_title">Customize Wallpaper</string>
+    <string name="btn_set_wallpaper">Set as Live Wallpaper</string>
+    <string name="wallpaper_description">Live wallpaper with depth clock and custom subject</string>
+    <string name="cd_preview">Wallpaper preview</string>
+</resources>

@@ -1,0 +1,93 @@
+package com.everwall
+
+import android.content.Context
+
+object WallpaperPrefs {
+    const val FILE_ORIGINAL   = "ew_original.png"
+    const val FILE_FOREGROUND = "ew_foreground.png"
+    const val FILE_FONT       = "ew_font.ttf"
+    const val NO_COLOR        = Int.MIN_VALUE
+
+    private const val PREFS        = "everwall_prefs"
+    private const val KEY_CLK_X    = "clock_x";  private const val KEY_CLK_Y    = "clock_y"
+    private const val KEY_CLK_SZ   = "clock_sz"; private const val KEY_CLK_ROT  = "clock_rot"
+    private const val KEY_DATE_X   = "date_x";   private const val KEY_DATE_Y   = "date_y"
+    private const val KEY_DATE_SZ  = "date_sz";  private const val KEY_DATE_ROT  = "date_rot"
+    private const val KEY_SUBJ_X   = "subj_x";  private const val KEY_SUBJ_Y   = "subj_y"
+    private const val KEY_SUBJ_SC  = "subj_sc";  private const val KEY_SUBJ_ROT  = "subj_rot"
+    private const val KEY_BG_ROT   = "bg_rot"
+    private const val KEY_COLOR    = "clk_color"
+    private const val KEY_USE24    = "use_24hr";  private const val KEY_SECS     = "show_secs"
+    private const val KEY_FONT     = "has_font"
+    private const val KEY_SURF_W   = "surface_w"; private const val KEY_SURF_H  = "surface_h"
+    private const val KEY_BG_DIM   = "bg_dim"
+    private const val KEY_CLK_DIM  = "clk_dim"
+    private const val KEY_SUBJ_DIM = "subj_dim"
+
+    // Default element positions / sizes
+    const val DEF_CLK_X   = 0.5f;  const val DEF_CLK_Y   = 0.28f
+    const val DEF_CLK_SZ  = 0.12f; const val DEF_CLK_ROT = 0f
+    const val DEF_DATE_X  = 0.5f;  const val DEF_DATE_Y  = 0.42f
+    const val DEF_DATE_SZ = 0.034f;const val DEF_DATE_ROT = 0f
+    const val DEF_SUBJ_X  = 0.5f;  const val DEF_SUBJ_Y  = 0.68f
+    const val DEF_SUBJ_SC = 0.5f;  const val DEF_SUBJ_ROT = 0f
+    const val DEF_BG_ROT  = 0f
+
+    fun saveAll(ctx: Context,
+                clkX: Float, clkY: Float, clkSz: Float, clkRot: Float,
+                dateX: Float, dateY: Float, dateSz: Float, dateRot: Float,
+                subjX: Float, subjY: Float, subjSc: Float, subjRot: Float,
+                bgRot: Float, color: Int, use24: Boolean, secs: Boolean,
+                bgDim: Float = 0f, clkDim: Float = 0f, subjDim: Float = 0f) =
+        prefs(ctx).edit().also {
+            it.putFloat(KEY_CLK_X,   clkX);   it.putFloat(KEY_CLK_Y,   clkY)
+            it.putFloat(KEY_CLK_SZ,  clkSz);  it.putFloat(KEY_CLK_ROT, clkRot)
+            it.putFloat(KEY_DATE_X,  dateX);  it.putFloat(KEY_DATE_Y,  dateY)
+            it.putFloat(KEY_DATE_SZ, dateSz); it.putFloat(KEY_DATE_ROT,dateRot)
+            it.putFloat(KEY_SUBJ_X,  subjX);  it.putFloat(KEY_SUBJ_Y,  subjY)
+            it.putFloat(KEY_SUBJ_SC, subjSc); it.putFloat(KEY_SUBJ_ROT,subjRot)
+            it.putFloat(KEY_BG_ROT,  bgRot)
+            it.putInt(KEY_COLOR, color)
+            it.putBoolean(KEY_USE24, use24); it.putBoolean(KEY_SECS, secs)
+            it.putFloat(KEY_BG_DIM,  bgDim); it.putFloat(KEY_CLK_DIM, clkDim)
+            it.putFloat(KEY_SUBJ_DIM,subjDim)
+        }.apply()
+
+    /** Wipe all layout data so the editor starts fresh after new images are picked. */
+    fun clearPositions(ctx: Context) = prefs(ctx).edit()
+        .remove(KEY_CLK_X).remove(KEY_CLK_Y).remove(KEY_CLK_SZ).remove(KEY_CLK_ROT)
+        .remove(KEY_DATE_X).remove(KEY_DATE_Y).remove(KEY_DATE_SZ).remove(KEY_DATE_ROT)
+        .remove(KEY_SUBJ_X).remove(KEY_SUBJ_Y).remove(KEY_SUBJ_SC).remove(KEY_SUBJ_ROT)
+        .remove(KEY_BG_ROT).remove(KEY_COLOR)
+        .remove(KEY_BG_DIM).remove(KEY_CLK_DIM).remove(KEY_SUBJ_DIM)
+        .apply()
+
+    fun setSurfaceSize(ctx: Context, w: Int, h: Int) =
+        prefs(ctx).edit().putInt(KEY_SURF_W, w).putInt(KEY_SURF_H, h).apply()
+    fun setHasFont(ctx: Context, v: Boolean) = prefs(ctx).edit().putBoolean(KEY_FONT, v).apply()
+
+    fun getSurfaceW(ctx: Context)  = prefs(ctx).getInt(KEY_SURF_W, 0)
+    fun getSurfaceH(ctx: Context)  = prefs(ctx).getInt(KEY_SURF_H, 0)
+    fun getClkX(ctx: Context)      = prefs(ctx).getFloat(KEY_CLK_X,    DEF_CLK_X)
+    fun getClkY(ctx: Context)      = prefs(ctx).getFloat(KEY_CLK_Y,    DEF_CLK_Y)
+    fun getClkSz(ctx: Context)     = prefs(ctx).getFloat(KEY_CLK_SZ,   DEF_CLK_SZ)
+    fun getClkRot(ctx: Context)    = prefs(ctx).getFloat(KEY_CLK_ROT,  DEF_CLK_ROT)
+    fun getDateX(ctx: Context)     = prefs(ctx).getFloat(KEY_DATE_X,   DEF_DATE_X)
+    fun getDateY(ctx: Context)     = prefs(ctx).getFloat(KEY_DATE_Y,   DEF_DATE_Y)
+    fun getDateSz(ctx: Context)    = prefs(ctx).getFloat(KEY_DATE_SZ,  DEF_DATE_SZ)
+    fun getDateRot(ctx: Context)   = prefs(ctx).getFloat(KEY_DATE_ROT, DEF_DATE_ROT)
+    fun getSubjX(ctx: Context)     = prefs(ctx).getFloat(KEY_SUBJ_X,   DEF_SUBJ_X)
+    fun getSubjY(ctx: Context)     = prefs(ctx).getFloat(KEY_SUBJ_Y,   DEF_SUBJ_Y)
+    fun getSubjSc(ctx: Context)    = prefs(ctx).getFloat(KEY_SUBJ_SC,  DEF_SUBJ_SC)
+    fun getSubjRot(ctx: Context)   = prefs(ctx).getFloat(KEY_SUBJ_ROT, DEF_SUBJ_ROT)
+    fun getBgRot(ctx: Context)     = prefs(ctx).getFloat(KEY_BG_ROT,   DEF_BG_ROT)
+    fun getColor(ctx: Context)     = prefs(ctx).getInt(KEY_COLOR,       NO_COLOR)
+    fun getUse24(ctx: Context)     = prefs(ctx).getBoolean(KEY_USE24,  false)
+    fun getSecs(ctx: Context)      = prefs(ctx).getBoolean(KEY_SECS,   false)
+    fun hasFont(ctx: Context)      = prefs(ctx).getBoolean(KEY_FONT,   false)
+    fun getBgDim(ctx: Context)     = prefs(ctx).getFloat(KEY_BG_DIM,   0f)
+    fun getClkDim(ctx: Context)    = prefs(ctx).getFloat(KEY_CLK_DIM,  0f)
+    fun getSubjDim(ctx: Context)   = prefs(ctx).getFloat(KEY_SUBJ_DIM, 0f)
+
+    private fun prefs(ctx: Context) = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+}

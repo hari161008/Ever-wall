@@ -1,0 +1,6 @@
+// Top-level build file. Do NOT add allprojects{} or repositories{} here.
+// Repository declarations live in settings.gradle (dependencyResolutionManagement).
+plugins {
+    id 'com.android.application' version '8.2.2' apply false
+    id 'org.jetbrains.kotlin.android' version '1.9.22' apply false
+}

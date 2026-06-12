@@ -1,0 +1,14 @@
+[
+    {
+        "merged": "com.everwall.app-mergeDebugResources-3:/layout/activity_editor.xml",
+        "source": "com.everwall.app-main-6:/layout/activity_editor.xml"
+    },
+    {
+        "merged": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-mergeDebugResources-3:\\layout\\activity_main.xml",
+        "source": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-main-6:\\layout\\activity_main.xml"
+    },
+    {
+        "merged": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-mergeDebugResources-3:\\layout\\activity_editor.xml",
+        "source": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-main-6:\\layout\\activity_editor.xml"
+    }
+]

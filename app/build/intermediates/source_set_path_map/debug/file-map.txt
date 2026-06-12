@@ -1,0 +1,38 @@
+com.everwall.app-resValues-0 C:\Android\Android Studio\Ever Wall\Ever Wall\app\build\generated\res\resValues\debug
+com.everwall.app-packageDebugResources-1 C:\Android\Android Studio\Ever Wall\Ever Wall\app\build\intermediates\incremental\debug\packageDebugResources\merged.dir
+com.everwall.app-packageDebugResources-2 C:\Android\Android Studio\Ever Wall\Ever Wall\app\build\intermediates\incremental\debug\packageDebugResources\stripped.dir
+com.everwall.app-merged_res-3 C:\Android\Android Studio\Ever Wall\Ever Wall\app\build\intermediates\merged_res\debug
+com.everwall.app-debug-4 C:\Android\Android Studio\Ever Wall\Ever Wall\app\src\debug\res
+com.everwall.app-main-5 C:\Android\Android Studio\Ever Wall\Ever Wall\app\src\main\res
+com.everwall.app-recyclerview-1.1.0-6 C:\Users\SRIRADHAKRSNA\.gradle\caches\transforms-3\0780361fbfc02d60bbedcf624638433b\transformed\recyclerview-1.1.0\res
+com.everwall.app-savedstate-1.2.1-7 C:\Users\SRIRADHAKRSNA\.gradle\caches\transforms-3\09105ff509fd54a92a41067aa5653918\transformed\savedstate-1.2.1\res
+com.everwall.app-appcompat-1.6.1-8 C:\Users\SRIRADHAKRSNA\.gradle\caches\transforms-3\1390ed0e93696117e0bd1340aa2458d6\transformed\appcompat-1.6.1\res
+com.everwall.app-core-ktx-1.12.0-9 C:\Users\SRIRADHAKRSNA\.gradle\caches\transforms-3\2acbe4481b7fc8c5f50b265534157997\transformed\core-ktx-1.12.0\res
+com.everwall.app-emoji2-1.2.0-10 C:\Users\SRIRADHAKRSNA\.gradle\caches\transforms-3\2ae845919254fd1c61ba530851d4711d\transformed\emoji2-1.2.0\res
+com.everwall.app-material-1.11.0-11 C:\Users\SRIRADHAKRSNA\.gradle\caches\transforms-3\3a347358b13a1901f4709358b2ed9945\transformed\material-1.11.0\res
+com.everwall.app-transition-1.2.0-12 C:\Users\SRIRADHAKRSNA\.gradle\caches\transforms-3\3d5a9a4578d2969d4bd4315ff0055d9a\transformed\transition-1.2.0\res
+com.everwall.app-coordinatorlayout-1.2.0-13 C:\Users\SRIRADHAKRSNA\.gradle\caches\transforms-3\4ea991d58162ff23a433fef964178041\transformed\coordinatorlayout-1.2.0\res
+com.everwall.app-lifecycle-viewmodel-ktx-2.7.0-14 C:\Users\SRIRADHAKRSNA\.gradle\caches\transforms-3\5967ca13f047e3cf271ce783e6fb9de9\transformed\lifecycle-viewmodel-ktx-2.7.0\res
+com.everwall.app-annotation-experimental-1.3.0-15 C:\Users\SRIRADHAKRSNA\.gradle\caches\transforms-3\5d7b28e2c337942c251313b95151289f\transformed\annotation-experimental-1.3.0\res
+com.everwall.app-cardview-1.0.0-16 C:\Users\SRIRADHAKRSNA\.gradle\caches\transforms-3\7192bc092133145dc42fdafeebe5edee\transformed\cardview-1.0.0\res
+com.everwall.app-profileinstaller-1.3.0-17 C:\Users\SRIRADHAKRSNA\.gradle\caches\transforms-3\78a0a8e2ee6a6f58e479b46914766cb1\transformed\profileinstaller-1.3.0\res
+com.everwall.app-lifecycle-runtime-2.7.0-18 C:\Users\SRIRADHAKRSNA\.gradle\caches\transforms-3\7940096e3e98252c892440d3f2c3373f\transformed\lifecycle-runtime-2.7.0\res
+com.everwall.app-lifecycle-livedata-2.7.0-19 C:\Users\SRIRADHAKRSNA\.gradle\caches\transforms-3\79c948d5a563d256f9c321ca2d8c85c7\transformed\lifecycle-livedata-2.7.0\res
+com.everwall.app-appcompat-resources-1.6.1-20 C:\Users\SRIRADHAKRSNA\.gradle\caches\transforms-3\8605a899b8773ac145ece6082f168511\transformed\appcompat-resources-1.6.1\res
+com.everwall.app-emoji2-views-helper-1.2.0-21 C:\Users\SRIRADHAKRSNA\.gradle\caches\transforms-3\8848a2782bf9a6bb6a60c97957b5d2ed\transformed\emoji2-views-helper-1.2.0\res
+com.everwall.app-constraintlayout-2.1.4-22 C:\Users\SRIRADHAKRSNA\.gradle\caches\transforms-3\899eb6999f1668ce0807a12ae7b79a42\transformed\constraintlayout-2.1.4\res
+com.everwall.app-lifecycle-livedata-core-ktx-2.7.0-23 C:\Users\SRIRADHAKRSNA\.gradle\caches\transforms-3\8a02bfbf57225495d28188bfdbf0f5f9\transformed\lifecycle-livedata-core-ktx-2.7.0\res
+com.everwall.app-lifecycle-viewmodel-2.7.0-24 C:\Users\SRIRADHAKRSNA\.gradle\caches\transforms-3\914177849f88652c8b10113371a0cf60\transformed\lifecycle-viewmodel-2.7.0\res
+com.everwall.app-lifecycle-viewmodel-savedstate-2.7.0-25 C:\Users\SRIRADHAKRSNA\.gradle\caches\transforms-3\a157c9b4883a01cf0c2cc48d1b8f08ea\transformed\lifecycle-viewmodel-savedstate-2.7.0\res
+com.everwall.app-viewpager2-1.0.0-26 C:\Users\SRIRADHAKRSNA\.gradle\caches\transforms-3\a32efcd196d0bec2db3454ba4a61052a\transformed\viewpager2-1.0.0\res
+com.everwall.app-lifecycle-livedata-core-2.7.0-27 C:\Users\SRIRADHAKRSNA\.gradle\caches\transforms-3\ab49a795ee8f8e9fbe38869e9ae78d2f\transformed\lifecycle-livedata-core-2.7.0\res
+com.everwall.app-core-runtime-2.2.0-28 C:\Users\SRIRADHAKRSNA\.gradle\caches\transforms-3\b142b6c20290fb766ef825d652df3fe1\transformed\core-runtime-2.2.0\res
+com.everwall.app-lifecycle-process-2.7.0-29 C:\Users\SRIRADHAKRSNA\.gradle\caches\transforms-3\c9ce0b67a1cd31c1dda71517af8d7473\transformed\lifecycle-process-2.7.0\res
+com.everwall.app-startup-runtime-1.1.1-30 C:\Users\SRIRADHAKRSNA\.gradle\caches\transforms-3\d87d2cc011329dbc6915f58ad22ea6eb\transformed\startup-runtime-1.1.1\res
+com.everwall.app-core-1.12.0-31 C:\Users\SRIRADHAKRSNA\.gradle\caches\transforms-3\db3f6b8020888a7f113f2982cc217484\transformed\core-1.12.0\res
+com.everwall.app-lifecycle-runtime-ktx-2.7.0-32 C:\Users\SRIRADHAKRSNA\.gradle\caches\transforms-3\df9bf8b477c7e5223843375ddd94138f\transformed\lifecycle-runtime-ktx-2.7.0\res
+com.everwall.app-savedstate-ktx-1.2.1-33 C:\Users\SRIRADHAKRSNA\.gradle\caches\transforms-3\e184f8793a161536c01379421d5808c7\transformed\savedstate-ktx-1.2.1\res
+com.everwall.app-activity-ktx-1.8.2-34 C:\Users\SRIRADHAKRSNA\.gradle\caches\transforms-3\e518fc09e9ebadc456c06404b092f124\transformed\activity-ktx-1.8.2\res
+com.everwall.app-activity-1.8.2-35 C:\Users\SRIRADHAKRSNA\.gradle\caches\transforms-3\f7b882c152d7c18f4ac24bfc93bafd12\transformed\activity-1.8.2\res
+com.everwall.app-fragment-1.3.6-36 C:\Users\SRIRADHAKRSNA\.gradle\caches\transforms-3\f857ed6359b5be8e560853431861bafa\transformed\fragment-1.3.6\res
+com.everwall.app-drawerlayout-1.1.1-37 C:\Users\SRIRADHAKRSNA\.gradle\caches\transforms-3\fc1fa3c9bb04819bb481e180355a8187\transformed\drawerlayout-1.1.1\res
