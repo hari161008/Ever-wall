@@ -3040,6 +3040,7 @@ drawable bg_hero_gradient
 drawable bg_image_placeholder
 drawable bg_processing_card
 drawable bg_step_badge
+drawable bg_toolbar_pill
 drawable btn_checkbox_checked_mtrl
 drawable btn_checkbox_checked_to_unchecked_mtrl_animation
 drawable btn_checkbox_unchecked_mtrl
@@ -3065,6 +3066,7 @@ drawable ic_call_decline_low
 drawable ic_clear_black_24
 drawable ic_clock_black_24dp
 drawable ic_font
+drawable ic_info_outline
 drawable ic_keyboard_black_24dp
 drawable ic_launcher_background
 drawable ic_launcher_foreground
@@ -3076,6 +3078,7 @@ drawable ic_mtrl_chip_checked_black
 drawable ic_mtrl_chip_checked_circle
 drawable ic_mtrl_chip_close_circle
 drawable ic_person_add
+drawable ic_reset
 drawable ic_search_black_24
 drawable m3_avd_hide_password
 drawable m3_avd_show_password
@@ -3654,6 +3657,7 @@ id titleDividerNoCustom
 id title_template
 id toggle
 id toolbar
+id toolbar_container
 id top
 id topPanel
 id touch_outside

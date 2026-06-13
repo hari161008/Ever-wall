@@ -19,7 +19,7 @@
             android:layout_height="match_parent"
             android:layout_gravity="center"
             app:cardCornerRadius="24dp"
-            app:cardElevation="16dp"
+            app:cardElevation="0dp"
             app:strokeWidth="0dp"
             app:cardBackgroundColor="#000000">
             <com.everwall.WallpaperEditorView
@@ -28,57 +28,77 @@
                 android:layout_height="match_parent" />
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Reset — floats above preview card -->
+        <!-- Reset button — floating above preview, top-right -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_reset"
             android:layout_width="wrap_content"
-            android:layout_height="36dp"
+            android:layout_height="38dp"
             android:layout_gravity="top|end"
-            android:layout_marginTop="68dp"
+            android:layout_marginTop="70dp"
             android:layout_marginEnd="14dp"
-            android:text="↺  Reset"
+            android:text="Reset"
             android:textSize="12sp"
-            android:textColor="#CCFFFFFF"
-            android:paddingStart="14dp"
+            android:textColor="#EEFFFFFF"
+            android:paddingStart="10dp"
             android:paddingEnd="14dp"
-            app:backgroundTint="#BB1A1A1A"
-            app:strokeColor="#33FFFFFF"
+            android:letterSpacing="0.01"
+            app:backgroundTint="#D0141414"
+            app:strokeColor="#22FFFFFF"
             app:strokeWidth="1dp"
-            app:cornerRadius="18dp"
-            app:rippleColor="#33FFFFFF" />
+            app:cornerRadius="19dp"
+            app:rippleColor="#33FFFFFF"
+            app:icon="@drawable/ic_reset"
+            app:iconSize="15dp"
+            app:iconTint="#AAFFFFFF"
+            app:iconGravity="textStart"
+            app:iconPadding="4dp"
+            app:elevation="6dp" />
 
     </FrameLayout>
 
-    <!-- Floating toolbar -->
+    <!-- ── Floating toolbar ─────────────────────────────────────────────── -->
+    <LinearLayout
+        android:id="@+id/toolbar_container"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:background="#CC0A0A0A"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp">
+
+        <!-- Pill-shaped app title badge -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="38dp"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:background="@drawable/bg_toolbar_pill">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="✦  Ever Wall"
+                android:textColor="#F0FFFFFF"
+                android:textSize="15sp"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.02" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Hidden toolbar for system back-nav support -->
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="#CC0A0A0A"
-        android:elevation="0dp"
-        app:navigationIconTint="#FFFFFF">
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:layout_gravity="center">
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Ever Wall"
-                android:textColor="#FFFFFF"
-                android:textSize="17sp"
-                android:fontFamily="sans-serif-medium" />
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Tap · Pinch · Drag to edit"
-                android:textColor="#66FFFFFF"
-                android:textSize="10sp" />
-        </LinearLayout>
-    </com.google.android.material.appbar.MaterialToolbar>
+        android:background="@android:color/transparent"
+        android:visibility="invisible"
+        app:navigationIconTint="#FFFFFF" />
 
-    <!-- Controls bottom sheet -->
+    <!-- ── Controls bottom sheet ─────────────────────────────────────────── -->
     <LinearLayout
         android:id="@+id/controls_root"
         android:layout_width="match_parent"
@@ -91,7 +111,7 @@
         app:behavior_skipCollapsed="false"
         app:behavior_draggable="true">
 
-        <!-- Header: drag indicator + Set Live button -->
+        <!-- Header: drag pill + Set Live button -->
         <FrameLayout
             android:id="@+id/drag_handle"
             android:layout_width="match_parent"
@@ -104,7 +124,7 @@
                 android:layout_marginTop="10dp"
                 android:background="@drawable/bg_drag_handle"
                 android:backgroundTint="?attr/colorOnSurfaceVariant"
-                android:alpha="0.35" />
+                android:alpha="0.3" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_set_wallpaper"
@@ -115,12 +135,12 @@
                 android:layout_marginEnd="16dp"
                 android:text="Set Live"
                 android:textSize="12sp"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
+                android:paddingStart="18dp"
+                android:paddingEnd="18dp"
                 app:cornerRadius="20dp" />
         </FrameLayout>
 
-        <!-- Panel navigation pills -->
+        <!-- Navigation pills -->
         <HorizontalScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -184,12 +204,10 @@
             </LinearLayout>
         </HorizontalScrollView>
 
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
+        <View android:layout_width="match_parent" android:layout_height="1dp"
             android:background="?attr/colorOutlineVariant" />
 
-        <!-- Scrollable panel content -->
+        <!-- Scrollable panels -->
         <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
             android:layout_height="0dp"
@@ -201,367 +219,273 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-                <!-- ══════════ BACKGROUND PANEL ══════════ -->
-                <LinearLayout
-                    android:id="@+id/panel_bg"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="22dp"
-                    android:visibility="gone">
+                <!-- ═══ BACKGROUND PANEL ═══ -->
+                <LinearLayout android:id="@+id/panel_bg"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="vertical" android:padding="22dp" android:visibility="gone">
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_change_bg"
                         style="@style/Widget.Material3.Button.TonalButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="52dp"
-                        android:text="Choose Background Image"
-                        android:textSize="14sp"
-                        android:layout_marginBottom="22dp"
-                        app:cornerRadius="16dp"
-                        app:icon="@drawable/ic_add_photo"
-                        app:iconGravity="textStart"
-                        app:iconSize="18dp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="ROTATION"
-                        android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
-                        android:textColor="?attr/colorPrimary"
-                        android:letterSpacing="0.12"
-                        android:layout_marginBottom="6dp" />
-
-                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                        android:orientation="horizontal" android:gravity="center_vertical">
-                        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                            android:text="Rotation" android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                            android:textColor="?attr/colorOnSurface" />
-                        <TextView android:id="@+id/tv_bg_rot_val" android:layout_width="wrap_content"
-                            android:layout_height="wrap_content" android:text="0°"
-                            android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
-                            android:textColor="?attr/colorPrimary" android:minWidth="44dp" android:gravity="end" />
-                    </LinearLayout>
-                    <com.google.android.material.slider.Slider
-                        android:id="@+id/slider_bg_rot" android:layout_width="match_parent"
-                        android:layout_height="wrap_content" android:valueFrom="-180"
-                        android:valueTo="180" android:value="0" android:stepSize="1"
-                        android:layout_marginBottom="20dp" />
-
-                    <View android:layout_width="match_parent" android:layout_height="1dp"
-                        android:background="?attr/colorOutlineVariant" android:layout_marginBottom="20dp" />
-
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="DIM" android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
-                        android:textColor="?attr/colorPrimary" android:letterSpacing="0.12"
-                        android:layout_marginBottom="6dp" />
-
-                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                        android:orientation="horizontal" android:gravity="center_vertical">
-                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-                            android:layout_weight="1" android:orientation="vertical">
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                                android:text="Dim Element" android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                                android:textColor="?attr/colorOnSurface" />
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                                android:text="Darken the background layer"
-                                android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                                android:textColor="?attr/colorOnSurfaceVariant" />
-                        </LinearLayout>
-                        <TextView android:id="@+id/tv_bg_dim_val" android:layout_width="wrap_content"
-                            android:layout_height="wrap_content" android:text="0%"
-                            android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
-                            android:textColor="?attr/colorPrimary" android:minWidth="44dp" android:gravity="end" />
-                    </LinearLayout>
-                    <com.google.android.material.slider.Slider
-                        android:id="@+id/slider_bg_dim" android:layout_width="match_parent"
-                        android:layout_height="wrap_content" android:valueFrom="0"
-                        android:valueTo="100" android:value="0" android:stepSize="1" />
-                </LinearLayout>
-
-                <!-- ══════════ TIME PANEL ══════════ -->
-                <LinearLayout
-                    android:id="@+id/panel_time"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="22dp"
-                    android:visibility="visible">
-
-                    <!-- Info banner -->
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:background="?attr/colorSecondaryContainer"
-                        android:padding="12dp"
-                        android:gravity="center_vertical"
-                        android:layout_marginBottom="20dp">
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:text="Tap an element in the preview to select it, then drag to move or pinch to resize."
-                            android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                            android:textColor="?attr/colorOnSecondaryContainer" />
-                    </LinearLayout>
-
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="DISPLAY" android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
-                        android:textColor="?attr/colorPrimary" android:letterSpacing="0.12"
-                        android:layout_marginBottom="4dp" />
-
-                    <LinearLayout android:layout_width="match_parent" android:layout_height="56dp"
-                        android:orientation="horizontal" android:gravity="center_vertical">
-                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-                            android:layout_weight="1" android:orientation="vertical">
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                                android:text="24-Hour Format" android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                                android:textColor="?attr/colorOnSurface" />
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                                android:text="Switch from 12h to 24h" android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                                android:textColor="?attr/colorOnSurfaceVariant" />
-                        </LinearLayout>
-                        <com.google.android.material.switchmaterial.SwitchMaterial
-                            android:id="@+id/switch_24hr" android:layout_width="wrap_content"
-                            android:layout_height="wrap_content" android:checked="false" />
-                    </LinearLayout>
-
-                    <LinearLayout android:layout_width="match_parent" android:layout_height="56dp"
-                        android:orientation="horizontal" android:gravity="center_vertical"
-                        android:layout_marginBottom="20dp">
-                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-                            android:layout_weight="1" android:orientation="vertical">
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                                android:text="Show Seconds" android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                                android:textColor="?attr/colorOnSurface" />
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                                android:text="Include seconds in the clock" android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                                android:textColor="?attr/colorOnSurfaceVariant" />
-                        </LinearLayout>
-                        <com.google.android.material.switchmaterial.SwitchMaterial
-                            android:id="@+id/switch_seconds" android:layout_width="wrap_content"
-                            android:layout_height="wrap_content" android:checked="false" />
-                    </LinearLayout>
-
-                    <View android:layout_width="match_parent" android:layout_height="1dp"
-                        android:background="?attr/colorOutlineVariant" android:layout_marginBottom="20dp" />
+                        android:layout_width="match_parent" android:layout_height="52dp"
+                        android:text="Choose Background Image" android:textSize="14sp"
+                        android:layout_marginBottom="24dp" app:cornerRadius="16dp"
+                        app:icon="@drawable/ic_add_photo" app:iconGravity="textStart" app:iconSize="18dp" />
 
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                         android:text="ROTATION" android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
-                        android:textColor="?attr/colorPrimary" android:letterSpacing="0.12"
-                        android:layout_marginBottom="6dp" />
-
+                        android:textColor="?attr/colorPrimary" android:letterSpacing="0.12" android:layout_marginBottom="6dp" />
                     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
                         android:orientation="horizontal" android:gravity="center_vertical">
                         <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                            android:text="Clock" android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                            android:textColor="?attr/colorOnSurface" />
-                        <TextView android:id="@+id/tv_clk_rot_val" android:layout_width="wrap_content"
-                            android:layout_height="wrap_content" android:text="0°"
-                            android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
+                            android:text="Rotation" android:textAppearance="@style/TextAppearance.Material3.BodyLarge" android:textColor="?attr/colorOnSurface" />
+                        <TextView android:id="@+id/tv_bg_rot_val" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="0°" android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
+                            android:textColor="?attr/colorPrimary" android:minWidth="44dp" android:gravity="end" />
+                    </LinearLayout>
+                    <com.google.android.material.slider.Slider android:id="@+id/slider_bg_rot"
+                        android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:valueFrom="-180" android:valueTo="180" android:value="0" android:stepSize="1"
+                        android:layout_marginBottom="22dp" />
+
+                    <View android:layout_width="match_parent" android:layout_height="1dp"
+                        android:background="?attr/colorOutlineVariant" android:layout_marginBottom="22dp" />
+
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="DIM" android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
+                        android:textColor="?attr/colorPrimary" android:letterSpacing="0.12" android:layout_marginBottom="6dp" />
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="horizontal" android:gravity="center_vertical">
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Dim Element" android:textAppearance="@style/TextAppearance.Material3.BodyLarge" android:textColor="?attr/colorOnSurface" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Reduce background brightness" android:textAppearance="@style/TextAppearance.Material3.BodySmall" android:textColor="?attr/colorOnSurfaceVariant" />
+                        </LinearLayout>
+                        <TextView android:id="@+id/tv_bg_dim_val" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="0%" android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
+                            android:textColor="?attr/colorPrimary" android:minWidth="44dp" android:gravity="end" />
+                    </LinearLayout>
+                    <com.google.android.material.slider.Slider android:id="@+id/slider_bg_dim"
+                        android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:valueFrom="0" android:valueTo="100" android:value="0" android:stepSize="1" />
+                </LinearLayout>
+
+                <!-- ═══ TIME PANEL ═══ -->
+                <LinearLayout android:id="@+id/panel_time"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="vertical" android:padding="22dp" android:visibility="visible">
+
+                    <!-- Modern info banner -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="22dp"
+                        app:cardBackgroundColor="?attr/colorSecondaryContainer"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="0dp"
+                        app:strokeWidth="0dp">
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:paddingStart="14dp"
+                            android:paddingEnd="14dp"
+                            android:paddingTop="12dp"
+                            android:paddingBottom="12dp">
+                            <ImageView
+                                android:layout_width="18dp"
+                                android:layout_height="18dp"
+                                android:src="@drawable/ic_info_outline"
+                                android:layout_marginEnd="10dp"
+                                app:tint="?attr/colorOnSecondaryContainer"
+                                android:contentDescription="Info" />
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Tap an element in the preview to select it. Then drag to reposition or pinch to resize."
+                                android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                                android:textColor="?attr/colorOnSecondaryContainer"
+                                android:lineSpacingExtra="2dp" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="DISPLAY" android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
+                        android:textColor="?attr/colorPrimary" android:letterSpacing="0.12" android:layout_marginBottom="4dp" />
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="56dp"
+                        android:orientation="horizontal" android:gravity="center_vertical">
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="24-Hour Format" android:textAppearance="@style/TextAppearance.Material3.BodyLarge" android:textColor="?attr/colorOnSurface" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Switch from 12h to 24h" android:textAppearance="@style/TextAppearance.Material3.BodySmall" android:textColor="?attr/colorOnSurfaceVariant" />
+                        </LinearLayout>
+                        <com.google.android.material.switchmaterial.SwitchMaterial android:id="@+id/switch_24hr"
+                            android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="false" />
+                    </LinearLayout>
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="56dp"
+                        android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="22dp">
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Show Seconds" android:textAppearance="@style/TextAppearance.Material3.BodyLarge" android:textColor="?attr/colorOnSurface" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Include seconds in the clock" android:textAppearance="@style/TextAppearance.Material3.BodySmall" android:textColor="?attr/colorOnSurfaceVariant" />
+                        </LinearLayout>
+                        <com.google.android.material.switchmaterial.SwitchMaterial android:id="@+id/switch_seconds"
+                            android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="false" />
+                    </LinearLayout>
+
+                    <View android:layout_width="match_parent" android:layout_height="1dp"
+                        android:background="?attr/colorOutlineVariant" android:layout_marginBottom="22dp" />
+
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="ROTATION" android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
+                        android:textColor="?attr/colorPrimary" android:letterSpacing="0.12" android:layout_marginBottom="6dp" />
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="horizontal" android:gravity="center_vertical">
+                        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                            android:text="Clock" android:textAppearance="@style/TextAppearance.Material3.BodyLarge" android:textColor="?attr/colorOnSurface" />
+                        <TextView android:id="@+id/tv_clk_rot_val" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="0°" android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
                             android:textColor="?attr/colorPrimary" android:minWidth="44dp" android:gravity="end" />
                     </LinearLayout>
                     <com.google.android.material.slider.Slider android:id="@+id/slider_clk_rot"
                         android:layout_width="match_parent" android:layout_height="wrap_content"
-                        android:valueFrom="-180" android:valueTo="180" android:value="0" android:stepSize="1"
-                        android:layout_marginBottom="8dp" />
-
+                        android:valueFrom="-180" android:valueTo="180" android:value="0" android:stepSize="1" android:layout_marginBottom="8dp" />
                     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
                         android:orientation="horizontal" android:gravity="center_vertical">
                         <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                            android:text="Date" android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                            android:textColor="?attr/colorOnSurface" />
-                        <TextView android:id="@+id/tv_date_rot_val" android:layout_width="wrap_content"
-                            android:layout_height="wrap_content" android:text="0°"
-                            android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
+                            android:text="Date" android:textAppearance="@style/TextAppearance.Material3.BodyLarge" android:textColor="?attr/colorOnSurface" />
+                        <TextView android:id="@+id/tv_date_rot_val" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="0°" android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
                             android:textColor="?attr/colorPrimary" android:minWidth="44dp" android:gravity="end" />
                     </LinearLayout>
                     <com.google.android.material.slider.Slider android:id="@+id/slider_date_rot"
                         android:layout_width="match_parent" android:layout_height="wrap_content"
-                        android:valueFrom="-180" android:valueTo="180" android:value="0" android:stepSize="1"
-                        android:layout_marginBottom="20dp" />
+                        android:valueFrom="-180" android:valueTo="180" android:value="0" android:stepSize="1" android:layout_marginBottom="22dp" />
 
                     <View android:layout_width="match_parent" android:layout_height="1dp"
-                        android:background="?attr/colorOutlineVariant" android:layout_marginBottom="20dp" />
+                        android:background="?attr/colorOutlineVariant" android:layout_marginBottom="22dp" />
 
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                         android:text="DIM" android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
-                        android:textColor="?attr/colorPrimary" android:letterSpacing="0.12"
-                        android:layout_marginBottom="6dp" />
-
+                        android:textColor="?attr/colorPrimary" android:letterSpacing="0.12" android:layout_marginBottom="6dp" />
                     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
                         android:orientation="horizontal" android:gravity="center_vertical">
-                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-                            android:layout_weight="1" android:orientation="vertical">
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                                android:text="Dim Element" android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                                android:textColor="?attr/colorOnSurface" />
+                                android:text="Dim Element" android:textAppearance="@style/TextAppearance.Material3.BodyLarge" android:textColor="?attr/colorOnSurface" />
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                                android:text="Darken the clock and date"
-                                android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                                android:textColor="?attr/colorOnSurfaceVariant" />
+                                android:text="Reduce clock and date brightness" android:textAppearance="@style/TextAppearance.Material3.BodySmall" android:textColor="?attr/colorOnSurfaceVariant" />
                         </LinearLayout>
-                        <TextView android:id="@+id/tv_time_dim_val" android:layout_width="wrap_content"
-                            android:layout_height="wrap_content" android:text="0%"
-                            android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
+                        <TextView android:id="@+id/tv_time_dim_val" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="0%" android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
                             android:textColor="?attr/colorPrimary" android:minWidth="44dp" android:gravity="end" />
                     </LinearLayout>
                     <com.google.android.material.slider.Slider android:id="@+id/slider_time_dim"
                         android:layout_width="match_parent" android:layout_height="wrap_content"
-                        android:valueFrom="0" android:valueTo="100" android:value="0" android:stepSize="1"
-                        android:layout_marginBottom="20dp" />
+                        android:valueFrom="0" android:valueTo="100" android:value="0" android:stepSize="1" android:layout_marginBottom="22dp" />
 
                     <View android:layout_width="match_parent" android:layout_height="1dp"
-                        android:background="?attr/colorOutlineVariant" android:layout_marginBottom="20dp" />
+                        android:background="?attr/colorOutlineVariant" android:layout_marginBottom="22dp" />
 
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                         android:text="FONT" android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
-                        android:textColor="?attr/colorPrimary" android:letterSpacing="0.12"
-                        android:layout_marginBottom="6dp" />
-
-                    <!-- Custom font row -->
+                        android:textColor="?attr/colorPrimary" android:letterSpacing="0.12" android:layout_marginBottom="6dp" />
                     <LinearLayout android:layout_width="match_parent" android:layout_height="60dp"
-                        android:orientation="horizontal" android:gravity="center_vertical"
-                        android:layout_marginBottom="20dp">
-                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-                            android:layout_weight="1" android:orientation="vertical">
+                        android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="22dp">
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                                android:text="Use Custom Font" android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                                android:textColor="?attr/colorOnSurface" />
-                            <TextView android:id="@+id/tv_font_status" android:layout_width="wrap_content"
-                                android:layout_height="wrap_content" android:text="System default"
-                                android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                                android:textColor="?attr/colorOnSurfaceVariant" />
+                                android:text="Use Custom Font" android:textAppearance="@style/TextAppearance.Material3.BodyLarge" android:textColor="?attr/colorOnSurface" />
+                            <TextView android:id="@+id/tv_font_status" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="System default" android:textAppearance="@style/TextAppearance.Material3.BodySmall" android:textColor="?attr/colorOnSurfaceVariant" />
                         </LinearLayout>
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btn_pick_font"
                             style="@style/Widget.Material3.Button.OutlinedButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="44dp"
-                            android:text="Choose .ttf"
-                            android:textSize="12sp"
-                            android:paddingStart="14dp"
-                            android:paddingEnd="14dp"
-                            app:cornerRadius="22dp" />
+                            android:layout_width="wrap_content" android:layout_height="44dp"
+                            android:text="Choose .ttf" android:textSize="12sp"
+                            android:paddingStart="14dp" android:paddingEnd="14dp" app:cornerRadius="22dp" />
                     </LinearLayout>
 
                     <View android:layout_width="match_parent" android:layout_height="1dp"
-                        android:background="?attr/colorOutlineVariant" android:layout_marginBottom="20dp" />
+                        android:background="?attr/colorOutlineVariant" android:layout_marginBottom="22dp" />
 
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                         android:text="COLOR" android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
-                        android:textColor="?attr/colorPrimary" android:letterSpacing="0.12"
-                        android:layout_marginBottom="6dp" />
-
-                    <!-- Font color row -->
+                        android:textColor="?attr/colorPrimary" android:letterSpacing="0.12" android:layout_marginBottom="6dp" />
                     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                        android:orientation="horizontal" android:gravity="center_vertical"
-                        android:layout_marginBottom="10dp">
-                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-                            android:layout_weight="1" android:orientation="vertical">
+                        android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="10dp">
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                                android:text="Font Color" android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                                android:textColor="?attr/colorOnSurface" />
+                                android:text="Font Color" android:textAppearance="@style/TextAppearance.Material3.BodyLarge" android:textColor="?attr/colorOnSurface" />
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                                android:text="Auto-detected from background"
-                                android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                                android:textColor="?attr/colorOnSurfaceVariant" />
+                                android:text="Auto-detected from background" android:textAppearance="@style/TextAppearance.Material3.BodySmall" android:textColor="?attr/colorOnSurfaceVariant" />
                         </LinearLayout>
-
                         <com.google.android.material.chip.Chip
                             android:id="@+id/chip_pick_color"
                             style="@style/Widget.Material3.Chip.Filter"
-                            android:layout_width="wrap_content"
-                            android:layout_height="40dp"
-                            android:text="Pick"
-                            android:checkable="true"
-                            android:checked="false"
-                            android:layout_marginEnd="10dp"
-                            app:chipMinHeight="40dp" />
-
+                            android:layout_width="wrap_content" android:layout_height="40dp"
+                            android:text="Pick" android:checkable="true" android:checked="false"
+                            android:layout_marginEnd="10dp" app:chipMinHeight="40dp" />
                         <View android:id="@+id/color_swatch"
-                            android:layout_width="38dp"
-                            android:layout_height="38dp"
+                            android:layout_width="38dp" android:layout_height="38dp"
                             android:background="@drawable/bg_color_swatch" />
                     </LinearLayout>
-
-                    <!-- Color picker — hidden until Pick tapped -->
                     <com.everwall.ColorPickerView
                         android:id="@+id/color_picker"
-                        android:layout_width="match_parent"
-                        android:layout_height="170dp"
-                        android:layout_marginBottom="4dp"
-                        android:visibility="gone"
-                        android:alpha="0" />
+                        android:layout_width="match_parent" android:layout_height="170dp"
+                        android:layout_marginBottom="4dp" android:visibility="gone" android:alpha="0" />
 
                 </LinearLayout>
 
-                <!-- ══════════ SUBJECT PANEL ══════════ -->
-                <LinearLayout
-                    android:id="@+id/panel_subject"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="22dp"
-                    android:visibility="gone">
+                <!-- ═══ SUBJECT PANEL ═══ -->
+                <LinearLayout android:id="@+id/panel_subject"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="vertical" android:padding="22dp" android:visibility="gone">
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_change_subject"
                         style="@style/Widget.Material3.Button.TonalButton"
-                        android:layout_width="match_parent"
-                        android:layout_height="52dp"
-                        android:text="Choose Cutout Subject"
-                        android:textSize="14sp"
-                        android:layout_marginBottom="22dp"
-                        app:cornerRadius="16dp"
-                        app:icon="@drawable/ic_person_add"
-                        app:iconGravity="textStart"
-                        app:iconSize="18dp" />
+                        android:layout_width="match_parent" android:layout_height="52dp"
+                        android:text="Choose Cutout Subject" android:textSize="14sp"
+                        android:layout_marginBottom="24dp" app:cornerRadius="16dp"
+                        app:icon="@drawable/ic_person_add" app:iconGravity="textStart" app:iconSize="18dp" />
 
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                         android:text="ROTATION" android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
-                        android:textColor="?attr/colorPrimary" android:letterSpacing="0.12"
-                        android:layout_marginBottom="6dp" />
-
+                        android:textColor="?attr/colorPrimary" android:letterSpacing="0.12" android:layout_marginBottom="6dp" />
                     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
                         android:orientation="horizontal" android:gravity="center_vertical">
                         <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                            android:text="Rotation" android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                            android:textColor="?attr/colorOnSurface" />
-                        <TextView android:id="@+id/tv_subj_rot_val" android:layout_width="wrap_content"
-                            android:layout_height="wrap_content" android:text="0°"
-                            android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
+                            android:text="Rotation" android:textAppearance="@style/TextAppearance.Material3.BodyLarge" android:textColor="?attr/colorOnSurface" />
+                        <TextView android:id="@+id/tv_subj_rot_val" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="0°" android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
                             android:textColor="?attr/colorPrimary" android:minWidth="44dp" android:gravity="end" />
                     </LinearLayout>
                     <com.google.android.material.slider.Slider android:id="@+id/slider_subj_rot"
                         android:layout_width="match_parent" android:layout_height="wrap_content"
-                        android:valueFrom="-180" android:valueTo="180" android:value="0" android:stepSize="1"
-                        android:layout_marginBottom="20dp" />
+                        android:valueFrom="-180" android:valueTo="180" android:value="0" android:stepSize="1" android:layout_marginBottom="22dp" />
 
                     <View android:layout_width="match_parent" android:layout_height="1dp"
-                        android:background="?attr/colorOutlineVariant" android:layout_marginBottom="20dp" />
+                        android:background="?attr/colorOutlineVariant" android:layout_marginBottom="22dp" />
 
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                         android:text="DIM" android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
-                        android:textColor="?attr/colorPrimary" android:letterSpacing="0.12"
-                        android:layout_marginBottom="6dp" />
-
+                        android:textColor="?attr/colorPrimary" android:letterSpacing="0.12" android:layout_marginBottom="6dp" />
                     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
                         android:orientation="horizontal" android:gravity="center_vertical">
-                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-                            android:layout_weight="1" android:orientation="vertical">
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                                android:text="Dim Element" android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                                android:textColor="?attr/colorOnSurface" />
+                                android:text="Dim Element" android:textAppearance="@style/TextAppearance.Material3.BodyLarge" android:textColor="?attr/colorOnSurface" />
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                                android:text="Darken the subject cutout"
-                                android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                                android:textColor="?attr/colorOnSurfaceVariant" />
+                                android:text="Reduce subject brightness" android:textAppearance="@style/TextAppearance.Material3.BodySmall" android:textColor="?attr/colorOnSurfaceVariant" />
                         </LinearLayout>
-                        <TextView android:id="@+id/tv_subj_dim_val" android:layout_width="wrap_content"
-                            android:layout_height="wrap_content" android:text="0%"
-                            android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
+                        <TextView android:id="@+id/tv_subj_dim_val" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="0%" android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
                             android:textColor="?attr/colorPrimary" android:minWidth="44dp" android:gravity="end" />
                     </LinearLayout>
                     <com.google.android.material.slider.Slider android:id="@+id/slider_subj_dim"
@@ -572,7 +496,6 @@
 
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
-
     </LinearLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -3039,6 +3039,7 @@ int drawable bg_hero_gradient 0x7f07007d
 int drawable bg_image_placeholder 0x7f07007e
 int drawable bg_processing_card 0x7f07007f
 int drawable bg_step_badge 0x7f070080
+int drawable bg_toolbar_pill 0x7f0700f1
 int drawable btn_checkbox_checked_mtrl 0x7f070081
 int drawable btn_checkbox_checked_to_unchecked_mtrl_animation 0x7f070082
 int drawable btn_checkbox_unchecked_mtrl 0x7f070083
@@ -3064,6 +3065,7 @@ int drawable ic_call_decline_low 0x7f070096
 int drawable ic_clear_black_24 0x7f070097
 int drawable ic_clock_black_24dp 0x7f070098
 int drawable ic_font 0x7f070099
+int drawable ic_info_outline 0x7f0700f2
 int drawable ic_keyboard_black_24dp 0x7f07009a
 int drawable ic_launcher_background 0x7f07009b
 int drawable ic_launcher_foreground 0x7f07009c
@@ -3075,6 +3077,7 @@ int drawable ic_mtrl_chip_checked_black 0x7f0700a1
 int drawable ic_mtrl_chip_checked_circle 0x7f0700a2
 int drawable ic_mtrl_chip_close_circle 0x7f0700a3
 int drawable ic_person_add 0x7f0700a4
+int drawable ic_reset 0x7f0700f3
 int drawable ic_search_black_24 0x7f0700a5
 int drawable m3_avd_hide_password 0x7f0700a6
 int drawable m3_avd_show_password 0x7f0700a7
@@ -3653,6 +3656,7 @@ int id titleDividerNoCustom 0x7f0801ec
 int id title_template 0x7f0801ed
 int id toggle 0x7f0801ee
 int id toolbar 0x7f0801ef
+int id toolbar_container 0x7f080223
 int id top 0x7f0801f0
 int id topPanel 0x7f0801f1
 int id touch_outside 0x7f0801f2

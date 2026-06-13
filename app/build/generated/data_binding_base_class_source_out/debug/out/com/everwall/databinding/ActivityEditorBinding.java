@@ -117,6 +117,9 @@ public final class ActivityEditorBinding implements ViewBinding {
   public final MaterialToolbar toolbar;
 
   @NonNull
+  public final LinearLayout toolbarContainer;
+
+  @NonNull
   public final TextView tvBgDimVal;
 
   @NonNull
@@ -154,10 +157,10 @@ public final class ActivityEditorBinding implements ViewBinding {
       @NonNull Slider sliderDateRot, @NonNull Slider sliderSubjDim, @NonNull Slider sliderSubjRot,
       @NonNull Slider sliderTimeDim, @NonNull SwitchMaterial switch24hr,
       @NonNull SwitchMaterial switchSeconds, @NonNull MaterialToolbar toolbar,
-      @NonNull TextView tvBgDimVal, @NonNull TextView tvBgRotVal, @NonNull TextView tvClkRotVal,
-      @NonNull TextView tvDateRotVal, @NonNull TextView tvFontStatus,
-      @NonNull TextView tvSubjDimVal, @NonNull TextView tvSubjRotVal,
-      @NonNull TextView tvTimeDimVal) {
+      @NonNull LinearLayout toolbarContainer, @NonNull TextView tvBgDimVal,
+      @NonNull TextView tvBgRotVal, @NonNull TextView tvClkRotVal, @NonNull TextView tvDateRotVal,
+      @NonNull TextView tvFontStatus, @NonNull TextView tvSubjDimVal,
+      @NonNull TextView tvSubjRotVal, @NonNull TextView tvTimeDimVal) {
     this.rootView = rootView;
     this.btnChangeBg = btnChangeBg;
     this.btnChangeSubject = btnChangeSubject;
@@ -188,6 +191,7 @@ public final class ActivityEditorBinding implements ViewBinding {
     this.switch24hr = switch24hr;
     this.switchSeconds = switchSeconds;
     this.toolbar = toolbar;
+    this.toolbarContainer = toolbarContainer;
     this.tvBgDimVal = tvBgDimVal;
     this.tvBgRotVal = tvBgRotVal;
     this.tvClkRotVal = tvClkRotVal;
@@ -399,6 +403,12 @@ public final class ActivityEditorBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.toolbar_container;
+      LinearLayout toolbarContainer = ViewBindings.findChildViewById(rootView, id);
+      if (toolbarContainer == null) {
+        break missingId;
+      }
+
       id = R.id.tv_bg_dim_val;
       TextView tvBgDimVal = ViewBindings.findChildViewById(rootView, id);
       if (tvBgDimVal == null) {
@@ -452,8 +462,8 @@ public final class ActivityEditorBinding implements ViewBinding {
           chipPickColor, colorPicker, colorSwatch, controlsRoot, dragHandle, editorView, panelBg,
           panelSubject, panelTime, previewCard, previewContainer, sliderBgDim, sliderBgRot,
           sliderClkRot, sliderDateRot, sliderSubjDim, sliderSubjRot, sliderTimeDim, switch24hr,
-          switchSeconds, toolbar, tvBgDimVal, tvBgRotVal, tvClkRotVal, tvDateRotVal, tvFontStatus,
-          tvSubjDimVal, tvSubjRotVal, tvTimeDimVal);
+          switchSeconds, toolbar, toolbarContainer, tvBgDimVal, tvBgRotVal, tvClkRotVal,
+          tvDateRotVal, tvFontStatus, tvSubjDimVal, tvSubjRotVal, tvTimeDimVal);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));

@@ -72,12 +72,15 @@ drawable bg_hero_gradient
 drawable bg_image_placeholder
 drawable bg_processing_card
 drawable bg_step_badge
+drawable bg_toolbar_pill
 drawable ic_add_photo
 drawable ic_arrow_back
 drawable ic_font
+drawable ic_info_outline
 drawable ic_launcher_background
 drawable ic_launcher_foreground
 drawable ic_person_add
+drawable ic_reset
 id bg_placeholder
 id btn_change_bg
 id btn_change_subject
@@ -118,6 +121,7 @@ id subject_placeholder
 id switch_24hr
 id switch_seconds
 id toolbar
+id toolbar_container
 id tv_bg_dim_val
 id tv_bg_rot_val
 id tv_bg_status
