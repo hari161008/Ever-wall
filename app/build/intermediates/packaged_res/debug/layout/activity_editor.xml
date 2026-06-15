@@ -31,6 +31,7 @@
         <!-- Reset button — floating above preview, top-right -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btn_reset"
+            style="@style/Widget.Material3.Button.TonalButton"
             android:layout_width="wrap_content"
             android:layout_height="38dp"
             android:layout_gravity="top|end"
@@ -38,18 +39,12 @@
             android:layout_marginEnd="14dp"
             android:text="Reset"
             android:textSize="12sp"
-            android:textColor="#EEFFFFFF"
             android:paddingStart="10dp"
             android:paddingEnd="14dp"
             android:letterSpacing="0.01"
-            app:backgroundTint="#D0141414"
-            app:strokeColor="#22FFFFFF"
-            app:strokeWidth="1dp"
             app:cornerRadius="19dp"
-            app:rippleColor="#33FFFFFF"
             app:icon="@drawable/ic_reset"
             app:iconSize="15dp"
-            app:iconTint="#AAFFFFFF"
             app:iconGravity="textStart"
             app:iconPadding="4dp"
             app:elevation="6dp" />
@@ -95,7 +90,7 @@
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
         android:background="@android:color/transparent"
-        android:visibility="invisible"
+        android:visibility="gone"
         app:navigationIconTint="#FFFFFF" />
 
     <!-- ── Controls bottom sheet ─────────────────────────────────────────── -->
@@ -106,7 +101,7 @@
         android:orientation="vertical"
         android:background="?attr/colorSurface"
         android:elevation="24dp"
-        app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior"
+        app:layout_behavior="com.everwall.LockableBottomSheetBehavior"
         app:behavior_peekHeight="368dp"
         app:behavior_skipCollapsed="false"
         app:behavior_draggable="true">
@@ -126,89 +121,171 @@
                 android:backgroundTint="?attr/colorOnSurfaceVariant"
                 android:alpha="0.3" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btn_set_wallpaper"
-                style="@style/Widget.Material3.Button.TonalButton"
-                android:layout_width="wrap_content"
-                android:layout_height="40dp"
-                android:layout_gravity="center_vertical|end"
-                android:layout_marginEnd="16dp"
-                android:text="Set Live"
-                android:textSize="12sp"
-                android:paddingStart="18dp"
-                android:paddingEnd="18dp"
-                app:cornerRadius="20dp" />
-        </FrameLayout>
-
-        <!-- Navigation pills -->
-        <HorizontalScrollView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:scrollbars="none"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:paddingBottom="12dp">
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:gravity="center_vertical">
+                android:gravity="center_vertical"
+                android:layout_gravity="center_vertical|end"
+                android:layout_marginEnd="16dp">
+
+                <FrameLayout
+                    android:id="@+id/btn_lock"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_lock_circle"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="?attr/selectableItemBackgroundBorderless">
+
+                    <ImageView
+                        android:id="@+id/iv_lock"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_lock_open"
+                        android:tint="?attr/colorOnSurfaceVariant" />
+
+                </FrameLayout>
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_pill_bg"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:id="@+id/btn_set_wallpaper"
+                    style="@style/Widget.Material3.Button.TonalButton"
                     android:layout_width="wrap_content"
-                    android:layout_height="48dp"
-                    android:text="Background"
-                    android:textSize="13sp"
+                    android:layout_height="40dp"
+                    android:text="Set Live"
+                    android:textSize="12sp"
+                    android:paddingStart="18dp"
+                    android:paddingEnd="18dp"
+                    app:cornerRadius="20dp" />
+
+            </LinearLayout>
+        </FrameLayout>
+
+        <!-- Day & Night bar — integrated below drag handle, visible only in Day & Night mode -->
+        <LinearLayout
+            android:id="@+id/day_night_overlay"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:background="?attr/colorSurfaceContainerHigh">
+
+            <!-- Day / Night pill row -->
+            <LinearLayout
+                android:id="@+id/day_night_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:paddingTop="10dp"
+                android:paddingBottom="6dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_day"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="0dp"
+                    android:layout_height="42dp"
+                    android:layout_weight="1"
                     android:layout_marginEnd="8dp"
-                    app:cornerRadius="24dp"
-                    app:strokeWidth="1dp"
-                    app:strokeColor="?attr/colorOutline"
-                    app:icon="@drawable/ic_add_photo"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:text="Day"
+                    android:textSize="13sp"
+                    app:cornerRadius="21dp"
+                    app:icon="@drawable/ic_day"
                     app:iconSize="16dp"
                     app:iconGravity="textStart"
                     app:iconPadding="6dp" />
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_pill_time"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="48dp"
-                    android:text="Time &amp; Date"
+                    android:id="@+id/btn_night"
+                    style="@style/Widget.Material3.Button.TonalButton"
+                    android:layout_width="0dp"
+                    android:layout_height="42dp"
+                    android:layout_weight="1"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:text="Night"
                     android:textSize="13sp"
-                    android:layout_marginEnd="8dp"
-                    app:cornerRadius="24dp"
-                    app:strokeWidth="1dp"
-                    app:strokeColor="?attr/colorOutline"
-                    app:icon="@drawable/ic_font"
-                    app:iconSize="16dp"
-                    app:iconGravity="textStart"
-                    app:iconPadding="6dp" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_pill_subject"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="48dp"
-                    android:text="Subject"
-                    android:textSize="13sp"
-                    app:cornerRadius="24dp"
-                    app:strokeWidth="1dp"
-                    app:strokeColor="?attr/colorOutline"
-                    app:icon="@drawable/ic_person_add"
+                    app:cornerRadius="21dp"
+                    app:icon="@drawable/ic_night"
                     app:iconSize="16dp"
                     app:iconGravity="textStart"
                     app:iconPadding="6dp" />
 
             </LinearLayout>
-        </HorizontalScrollView>
 
-        <View android:layout_width="match_parent" android:layout_height="1dp"
-            android:background="?attr/colorOutlineVariant" />
+            <!-- Set Day & Night label + time buttons -->
+            <LinearLayout
+                android:id="@+id/set_time_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:paddingBottom="10dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="SET DAY &amp; NIGHT TIME"
+                    android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
+                    android:textColor="?attr/colorPrimary"
+                    android:letterSpacing="0.08"
+                    android:layout_marginBottom="6dp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_set_day_time"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="40dp"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="8dp"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:text="Set Day"
+                        android:textSize="12sp"
+                        app:cornerRadius="20dp"
+                        app:icon="@drawable/ic_day"
+                        app:iconSize="14dp"
+                        app:iconGravity="textStart"
+                        app:iconPadding="4dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_set_night_time"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="40dp"
+                        android:layout_weight="1"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:text="Set Night"
+                        android:textSize="12sp"
+                        app:cornerRadius="20dp"
+                        app:icon="@drawable/ic_night"
+                        app:iconSize="14dp"
+                        app:iconGravity="textStart"
+                        app:iconPadding="4dp" />
+
+                </LinearLayout>
+            </LinearLayout>
+
+            <View android:layout_width="match_parent" android:layout_height="1dp"
+                android:background="?attr/colorOutlineVariant" />
+
+        </LinearLayout>
 
         <!-- Scrollable panels -->
         <androidx.core.widget.NestedScrollView
+            android:id="@+id/panels_scroll"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
@@ -218,6 +295,102 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
+
+                <!-- Mode selector — above pill navigation row -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:paddingTop="10dp"
+                    android:paddingBottom="2dp">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_mode"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="34dp"
+                        android:text="Mode: None"
+                        android:textSize="11sp"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="10dp"
+                        app:cornerRadius="17dp"
+                        app:strokeWidth="1dp"
+                        app:strokeColor="?attr/colorOutline"
+                        app:icon="@drawable/ic_mode"
+                        app:iconSize="14dp"
+                        app:iconGravity="textStart"
+                        app:iconPadding="4dp" />
+
+                </LinearLayout>
+
+                <!-- Navigation pills — equal weight, scrolls with content -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_pill_bg"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:text="Background"
+                        android:textSize="11sp"
+                        android:layout_marginEnd="6dp"
+                        app:cornerRadius="22dp"
+                        app:strokeWidth="1dp"
+                        app:strokeColor="?attr/colorOutline"
+                        app:icon="@drawable/ic_add_photo"
+                        app:iconSize="14dp"
+                        app:iconGravity="textStart"
+                        app:iconPadding="4dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_pill_time"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:text="Time &amp; Date"
+                        android:textSize="11sp"
+                        android:layout_marginEnd="6dp"
+                        app:cornerRadius="22dp"
+                        app:strokeWidth="1dp"
+                        app:strokeColor="?attr/colorOutline"
+                        app:icon="@drawable/ic_font"
+                        app:iconSize="14dp"
+                        app:iconGravity="textStart"
+                        app:iconPadding="4dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_pill_subject"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="44dp"
+                        android:layout_weight="1"
+                        android:text="Subject"
+                        android:textSize="11sp"
+                        app:cornerRadius="22dp"
+                        app:strokeWidth="1dp"
+                        app:strokeColor="?attr/colorOutline"
+                        app:icon="@drawable/ic_person_add"
+                        app:iconSize="14dp"
+                        app:iconGravity="textStart"
+                        app:iconPadding="4dp" />
+
+                </LinearLayout>
+
+                <View android:layout_width="match_parent" android:layout_height="1dp"
+                    android:background="?attr/colorOutlineVariant" />
 
                 <!-- ═══ BACKGROUND PANEL ═══ -->
                 <LinearLayout android:id="@+id/panel_bg"
@@ -269,6 +442,28 @@
                     <com.google.android.material.slider.Slider android:id="@+id/slider_bg_dim"
                         android:layout_width="match_parent" android:layout_height="wrap_content"
                         android:valueFrom="0" android:valueTo="100" android:value="0" android:stepSize="1" />
+
+                    <View android:layout_width="match_parent" android:layout_height="1dp"
+                        android:background="?attr/colorOutlineVariant" android:layout_marginTop="16dp" android:layout_marginBottom="22dp" />
+
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="SATURATION" android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
+                        android:textColor="?attr/colorPrimary" android:letterSpacing="0.12" android:layout_marginBottom="6dp" />
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="horizontal" android:gravity="center_vertical">
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Saturation" android:textAppearance="@style/TextAppearance.Material3.BodyLarge" android:textColor="?attr/colorOnSurface" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Adjust background colour intensity" android:textAppearance="@style/TextAppearance.Material3.BodySmall" android:textColor="?attr/colorOnSurfaceVariant" />
+                        </LinearLayout>
+                        <TextView android:id="@+id/tv_bg_sat_val" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="100%" android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
+                            android:textColor="?attr/colorPrimary" android:minWidth="44dp" android:gravity="end" />
+                    </LinearLayout>
+                    <com.google.android.material.slider.Slider android:id="@+id/slider_bg_sat"
+                        android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:valueFrom="0" android:valueTo="200" android:value="100" android:stepSize="1" />
                 </LinearLayout>
 
                 <!-- ═══ TIME PANEL ═══ -->
@@ -327,7 +522,7 @@
                             android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="false" />
                     </LinearLayout>
                     <LinearLayout android:layout_width="match_parent" android:layout_height="56dp"
-                        android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="22dp">
+                        android:orientation="horizontal" android:gravity="center_vertical">
                         <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                                 android:text="Show Seconds" android:textAppearance="@style/TextAppearance.Material3.BodyLarge" android:textColor="?attr/colorOnSurface" />
@@ -335,6 +530,17 @@
                                 android:text="Include seconds in the clock" android:textAppearance="@style/TextAppearance.Material3.BodySmall" android:textColor="?attr/colorOnSurfaceVariant" />
                         </LinearLayout>
                         <com.google.android.material.switchmaterial.SwitchMaterial android:id="@+id/switch_seconds"
+                            android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="false" />
+                    </LinearLayout>
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="56dp"
+                        android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="22dp">
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Auto Hide on Lock Screen" android:textAppearance="@style/TextAppearance.Material3.BodyLarge" android:textColor="?attr/colorOnSurface" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Hide clock when screen is locked" android:textAppearance="@style/TextAppearance.Material3.BodySmall" android:textColor="?attr/colorOnSurfaceVariant" />
+                        </LinearLayout>
+                        <com.google.android.material.switchmaterial.SwitchMaterial android:id="@+id/switch_auto_hide"
                             android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="false" />
                     </LinearLayout>
 
@@ -491,6 +697,28 @@
                     <com.google.android.material.slider.Slider android:id="@+id/slider_subj_dim"
                         android:layout_width="match_parent" android:layout_height="wrap_content"
                         android:valueFrom="0" android:valueTo="100" android:value="0" android:stepSize="1" />
+
+                    <View android:layout_width="match_parent" android:layout_height="1dp"
+                        android:background="?attr/colorOutlineVariant" android:layout_marginTop="16dp" android:layout_marginBottom="22dp" />
+
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="SATURATION" android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
+                        android:textColor="?attr/colorPrimary" android:letterSpacing="0.12" android:layout_marginBottom="6dp" />
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="horizontal" android:gravity="center_vertical">
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Saturation" android:textAppearance="@style/TextAppearance.Material3.BodyLarge" android:textColor="?attr/colorOnSurface" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Adjust subject colour intensity" android:textAppearance="@style/TextAppearance.Material3.BodySmall" android:textColor="?attr/colorOnSurfaceVariant" />
+                        </LinearLayout>
+                        <TextView android:id="@+id/tv_subj_sat_val" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="100%" android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
+                            android:textColor="?attr/colorPrimary" android:minWidth="44dp" android:gravity="end" />
+                    </LinearLayout>
+                    <com.google.android.material.slider.Slider android:id="@+id/slider_subj_sat"
+                        android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:valueFrom="0" android:valueTo="200" android:value="100" android:stepSize="1" />
 
                 </LinearLayout>
 

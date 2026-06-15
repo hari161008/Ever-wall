@@ -11,7 +11,9 @@ import android.graphics.drawable.GradientDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.text.format.DateFormat
 import android.util.TypedValue
+import android.app.TimePickerDialog
 import android.view.View
 import android.view.ViewOutlineProvider
 import android.view.ViewTreeObserver
@@ -29,6 +31,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.everwall.databinding.ActivityEditorBinding
 import java.io.File
 import java.io.FileOutputStream
+import java.util.Locale
 
 class EditorActivity : AppCompatActivity() {
 
@@ -37,9 +40,15 @@ class EditorActivity : AppCompatActivity() {
     private var panel = Panel.TIME
     private var clockColor = Color.WHITE
     private var loadedBgBmp: Bitmap? = null
+    private lateinit var bsb: LockableBottomSheetBehavior<android.widget.LinearLayout>
+    private var sheetLocked = false
 
-    private val pickBg   = registerForActivityResult(ActivityResultContracts.GetContent()) { it?.let { u -> replaceImg(u, WallpaperPrefs.FILE_ORIGINAL) } }
-    private val pickFg   = registerForActivityResult(ActivityResultContracts.GetContent()) { it?.let { u -> replaceImg(u, WallpaperPrefs.FILE_FOREGROUND) } }
+    // Mode / Day-Night
+    private var wallpaperMode = WallpaperPrefs.MODE_NONE
+    private var editSlot      = WallpaperPrefs.EDIT_NONE
+
+    private val pickBg   = registerForActivityResult(ActivityResultContracts.GetContent()) { it?.let { u -> replaceImg(u, true) } }
+    private val pickFg   = registerForActivityResult(ActivityResultContracts.GetContent()) { it?.let { u -> replaceImg(u, false) } }
     private val pickFont = registerForActivityResult(ActivityResultContracts.GetContent()) { it?.let { u -> onFont(u) } }
     private val perm     = registerForActivityResult(ActivityResultContracts.RequestPermission()) { if (!it) toast("Storage permission required.") }
 
@@ -54,19 +63,47 @@ class EditorActivity : AppCompatActivity() {
         b = ActivityEditorBinding.inflate(layoutInflater)
         setContentView(b.root)
 
-        // Use the hidden toolbar only for system back-stack compatibility
-        setSupportActionBar(b.toolbar)
-        supportActionBar?.setDisplayShowTitleEnabled(false)
-        supportActionBar?.setDisplayHomeAsUpEnabled(false)
-
         setupBottomSheet()
         applyExactSurfaceAspectRatio()
         loadData()
         setupPills()
         setupPanels()
+        setupModeButton()
 
         b.btnSetWallpaper.setOnClickListener { animateBtnPress(b.btnSetWallpaper) { saveAndLaunch() } }
         b.btnReset.setOnClickListener        { showResetDialog() }
+        b.btnLock.setOnClickListener {
+            sheetLocked = !sheetLocked
+            bsb.locked = sheetLocked
+            b.ivLock.setImageResource(if (sheetLocked) R.drawable.ic_lock else R.drawable.ic_lock_open)
+
+            // Tint circle: highlighted when locked
+            val circleTint = if (sheetLocked)
+                attr(com.google.android.material.R.attr.colorSecondaryContainer)
+            else 0x1AFFFFFF.toInt()
+            b.btnLock.background = android.graphics.drawable.GradientDrawable().also { gd ->
+                gd.shape = android.graphics.drawable.GradientDrawable.OVAL
+                gd.setColor(circleTint)
+            }
+            val iconTint = if (sheetLocked)
+                attr(com.google.android.material.R.attr.colorOnSecondaryContainer)
+            else attr(com.google.android.material.R.attr.colorOnSurfaceVariant)
+            b.ivLock.setColorFilter(iconTint)
+
+            // Constrain NestedScrollView height to the visible peek area when locked
+            // so the user can scroll to the absolute bottom of all content
+            val lp = b.panelsScroll.layoutParams as android.widget.LinearLayout.LayoutParams
+            if (sheetLocked) {
+                val dp = resources.displayMetrics.density
+                val visH = ((PEEK_HEIGHT_DP - 52f) * dp).toInt()  // peek minus drag handle
+                lp.height  = visH
+                lp.weight  = 0f
+            } else {
+                lp.height  = 0
+                lp.weight  = 1f
+            }
+            b.panelsScroll.layoutParams = lp
+        }
 
         val dp = resources.displayMetrics.density
         b.controlsRoot.post {
@@ -78,8 +115,200 @@ class EditorActivity : AppCompatActivity() {
             }
             b.controlsRoot.clipToOutline = true
         }
-
         animateEntrance()
+    }
+
+    override fun onPause() { save(); super.onPause() }
+
+    // ── Mode / Day-Night ──────────────────────────────────────────────────────
+    private fun setupModeButton() {
+        b.btnMode.text = modeLabel()
+        b.btnMode.setOnClickListener {
+            MaterialAlertDialogBuilder(this)
+                .setTitle("Wallpaper Mode")
+                .setSingleChoiceItems(arrayOf("None", "Day and Night"),
+                    if (wallpaperMode == WallpaperPrefs.MODE_NONE) 0 else 1) { dialog, which ->
+                    val newMode = if (which == 0) WallpaperPrefs.MODE_NONE else WallpaperPrefs.MODE_DAY_NIGHT
+                    if (newMode != wallpaperMode) {
+                        saveCurrentSlot()
+                        applyWallpaperMode(newMode)
+                    }
+                    dialog.dismiss()
+                }.show()
+        }
+
+        b.btnDay.setOnClickListener {
+            if (editSlot != WallpaperPrefs.EDIT_DAY) {
+                saveCurrentSlot()
+                editSlot = WallpaperPrefs.EDIT_DAY
+                loadSlotIntoEditor(WallpaperPrefs.EDIT_DAY)
+                pillDayNight(WallpaperPrefs.EDIT_DAY)
+            }
+        }
+        b.btnNight.setOnClickListener {
+            if (editSlot != WallpaperPrefs.EDIT_NIGHT) {
+                saveCurrentSlot()
+                editSlot = WallpaperPrefs.EDIT_NIGHT
+                loadSlotIntoEditor(WallpaperPrefs.EDIT_NIGHT)
+                pillDayNight(WallpaperPrefs.EDIT_NIGHT)
+            }
+        }
+        b.btnSetDayTime.setOnClickListener   { showTimePicker(isDay = true) }
+        b.btnSetNightTime.setOnClickListener { showTimePicker(isDay = false) }
+
+        // Restore mode UI if already in Day/Night mode
+        if (wallpaperMode == WallpaperPrefs.MODE_DAY_NIGHT) {
+            showDayNightUI(true)
+            pillDayNight(editSlot)
+        }
+        updateDayNightTimeLabels()
+        updateSetLiveButton()
+    }
+
+    private fun applyWallpaperMode(mode: Int) {
+        wallpaperMode = mode
+        WallpaperPrefs.setWallpaperMode(this, mode)
+        if (mode == WallpaperPrefs.MODE_DAY_NIGHT) {
+            editSlot = WallpaperPrefs.EDIT_DAY
+            showDayNightUI(true)
+            loadSlotIntoEditor(WallpaperPrefs.EDIT_DAY)
+            pillDayNight(WallpaperPrefs.EDIT_DAY)
+        } else {
+            editSlot = WallpaperPrefs.EDIT_NONE
+            showDayNightUI(false)
+            loadSlotIntoEditor(WallpaperPrefs.EDIT_NONE)
+        }
+        b.btnMode.text = modeLabel()
+        updateSetLiveButton()
+    }
+
+    private fun showDayNightUI(show: Boolean) {
+        b.dayNightOverlay.visibility = if (show) View.VISIBLE else View.GONE
+        // Adjust peek height to accommodate the day/night bar
+        val dp = resources.displayMetrics.density
+        val barH = if (show) (120 * dp).toInt() else 0
+        bsb.peekHeight = (PEEK_HEIGHT_DP * dp).toInt() + barH
+    }
+
+    private fun pillDayNight(slot: Int) {
+        val dayActive  = slot == WallpaperPrefs.EDIT_DAY
+        val activeTint = attr(com.google.android.material.R.attr.colorPrimaryContainer)
+        val inactTint  = attr(com.google.android.material.R.attr.colorSurfaceContainerHigh)
+        b.btnDay.backgroundTintList   = android.content.res.ColorStateList.valueOf(if (dayActive) activeTint else inactTint)
+        b.btnNight.backgroundTintList = android.content.res.ColorStateList.valueOf(if (!dayActive) activeTint else inactTint)
+    }
+
+    private fun modeLabel() = if (wallpaperMode == WallpaperPrefs.MODE_NONE) "Mode: None" else "Mode: Day & Night"
+
+    private fun showTimePicker(isDay: Boolean) {
+        val savedMins = if (isDay) WallpaperPrefs.getDayMins(this) else WallpaperPrefs.getNightMins(this)
+        val h = if (savedMins >= 0) savedMins / 60 else if (isDay) 6 else 20
+        val m = if (savedMins >= 0) savedMins % 60 else 0
+        TimePickerDialog(this, { _, hour, minute ->
+            val mins = hour * 60 + minute
+            if (isDay) WallpaperPrefs.setDayMins(this, mins)
+            else       WallpaperPrefs.setNightMins(this, mins)
+            updateDayNightTimeLabels()
+            updateSetLiveButton()
+        }, h, m, DateFormat.is24HourFormat(this)).show()
+    }
+
+    private fun updateDayNightTimeLabels() {
+        val d = WallpaperPrefs.getDayMins(this)
+        val n = WallpaperPrefs.getNightMins(this)
+        b.btnSetDayTime.text   = if (d >= 0) "Day: ${fmtMins(d)}"   else "Set Day"
+        b.btnSetNightTime.text = if (n >= 0) "Night: ${fmtMins(n)}" else "Set Night"
+    }
+
+    private fun fmtMins(mins: Int): String {
+        val h = mins / 60; val m = mins % 60
+        return if (DateFormat.is24HourFormat(this)) "%02d:%02d".format(h, m)
+        else { val ampm = if (h < 12) "AM" else "PM"; val h12 = if (h % 12 == 0) 12 else h % 12
+               "%d:%02d %s".format(h12, m, ampm) }
+    }
+
+    private fun updateSetLiveButton() {
+        if (wallpaperMode == WallpaperPrefs.MODE_DAY_NIGHT) {
+            val daySet   = WallpaperPrefs.getDayMins(this) >= 0
+            val nightSet = WallpaperPrefs.getNightMins(this) >= 0
+            val both     = daySet && nightSet
+            b.btnSetWallpaper.isEnabled = both
+            b.btnSetWallpaper.text = when {
+                !daySet && !nightSet -> "Set Day & Night"
+                !daySet   -> "Set Day Time"
+                !nightSet -> "Set Night Time"
+                else -> "Set Live"
+            }
+        } else {
+            b.btnSetWallpaper.isEnabled = true
+            b.btnSetWallpaper.text = "Set Live"
+        }
+    }
+
+    // ── Slot load / save ──────────────────────────────────────────────────────
+    private fun loadSlotIntoEditor(slot: Int) {
+        val p   = WallpaperPrefs.loadSlot(this, slot)
+        val bgF = WallpaperPrefs.getBgFileForSlot(this, slot)
+        val fgF = WallpaperPrefs.getFgFileForSlot(this, slot)
+        val bgBmp = if (bgF.exists()) BitmapFactory.decodeFile(bgF.absolutePath) else null
+        val fgBmp = if (fgF.exists()) BitmapFactory.decodeFile(fgF.absolutePath) else null
+        loadedBgBmp = bgBmp
+        clockColor = if (p.color != WallpaperPrefs.NO_COLOR) p.color else Color.WHITE
+        with(b.editorView) {
+            clockX=p.clockX; clockY=p.clockY; clockSz=p.clockSz; clockRot=p.clockRot
+            dateX=p.dateX;   dateY=p.dateY;   dateSz=p.dateSz;   dateRot=p.dateRot
+            subjX=p.subjX;   subjY=p.subjY;   subjSc=p.subjSc;   subjRot=p.subjRot
+            bgRot=p.bgRot;   use24hr=p.use24; showSeconds=p.secs
+            bgDim=p.bgDim;   clockDim=p.clkDim; subjDim=p.subjDim
+            bgSat=p.bgSat;   subjSat=p.subjSat
+            this.clockColor = this@EditorActivity.clockColor
+            setBg(bgBmp); setFg(fgBmp)
+        }
+        syncSlidersFromEditor()
+    }
+
+    private fun syncSlidersFromEditor() {
+        with(b.editorView) {
+            b.sliderBgRot.value   = bgRot.coerceIn(-180f, 180f)
+            b.tvBgRotVal.text     = "${bgRot.toInt()}°"
+            b.sliderBgDim.value   = (bgDim * 100f).coerceIn(0f, 100f)
+            b.tvBgDimVal.text     = "${(bgDim * 100).toInt()}%"
+            b.sliderClkRot.value  = clockRot.coerceIn(-180f, 180f)
+            b.tvClkRotVal.text    = "${clockRot.toInt()}°"
+            b.sliderDateRot.value = dateRot.coerceIn(-180f, 180f)
+            b.tvDateRotVal.text   = "${dateRot.toInt()}°"
+            b.sliderTimeDim.value = (clockDim * 100f).coerceIn(0f, 100f)
+            b.tvTimeDimVal.text   = "${(clockDim * 100).toInt()}%"
+            b.sliderSubjRot.value = subjRot.coerceIn(-180f, 180f)
+            b.tvSubjRotVal.text   = "${subjRot.toInt()}°"
+            b.sliderSubjDim.value = (subjDim * 100f).coerceIn(0f, 100f)
+            b.tvSubjDimVal.text   = "${(subjDim * 100).toInt()}%"
+            b.sliderBgSat.value   = (bgSat   * 100f).coerceIn(0f, 200f)
+            b.tvBgSatVal.text     = "${(bgSat   * 100).toInt()}%"
+            b.sliderSubjSat.value = (subjSat * 100f).coerceIn(0f, 200f)
+            b.tvSubjSatVal.text   = "${(subjSat * 100).toInt()}%"
+            b.switch24hr.isChecked    = use24hr
+            b.switchSeconds.isChecked = showSeconds
+        }
+        b.colorPicker.color = clockColor
+        updateSwatch(clockColor)
+    }
+
+    private fun currentWallPrefs() = with(b.editorView) {
+        WallpaperPrefs.WallPrefs(
+            clockX, clockY, clockSz, clockRot,
+            dateX,  dateY,  dateSz,  dateRot,
+            subjX,  subjY,  subjSc,  subjRot,
+            bgRot, clockColor,
+            b.switch24hr.isChecked, b.switchSeconds.isChecked,
+            bgDim, clockDim, subjDim,
+            bgSat, subjSat
+        )
+    }
+
+    private fun saveCurrentSlot() {
+        WallpaperPrefs.saveToSlot(this, editSlot, currentWallPrefs())
+        WallpaperPrefs.setAutoHide(this, b.switchAutoHide.isChecked)
     }
 
     // ── Reset dialog ──────────────────────────────────────────────────────────
@@ -138,7 +367,8 @@ class EditorActivity : AppCompatActivity() {
     // ── Bottom sheet ──────────────────────────────────────────────────────────
     private fun setupBottomSheet() {
         val dp = resources.displayMetrics.density
-        val bsb = BottomSheetBehavior.from(b.controlsRoot)
+        @Suppress("UNCHECKED_CAST")
+        bsb = BottomSheetBehavior.from(b.controlsRoot) as LockableBottomSheetBehavior<android.widget.LinearLayout>
         bsb.peekHeight      = (PEEK_HEIGHT_DP * dp).toInt()
         bsb.state           = BottomSheetBehavior.STATE_COLLAPSED
         bsb.isDraggable     = true
@@ -153,6 +383,9 @@ class EditorActivity : AppCompatActivity() {
         b.previewContainer.viewTreeObserver.addOnGlobalLayoutListener(
             object : ViewTreeObserver.OnGlobalLayoutListener {
                 override fun onGlobalLayout() {
+                    val contH = b.previewContainer.height
+                    val contW = b.previewContainer.width
+                    if (contH <= 100 || contW <= 0) return
                     b.previewContainer.viewTreeObserver.removeOnGlobalLayoutListener(this)
                     val dp       = resources.displayMetrics.density
                     val peekH    = (PEEK_HEIGHT_DP * dp).toInt()
@@ -160,8 +393,8 @@ class EditorActivity : AppCompatActivity() {
                     val toolbarH = b.toolbarContainer.height.takeIf { it > 0 }
                         ?: TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 56f, resources.displayMetrics).toInt()
                     val padH     = (14 * dp).toInt()
-                    val avW = (b.previewContainer.width - padH * 2).coerceAtLeast(1)
-                    val avH = (b.previewContainer.height - peekH - gapH - toolbarH - padH).coerceAtLeast(1)
+                    val avW = (contW - padH * 2).coerceAtLeast(1)
+                    val avH = (contH - peekH - gapH - toolbarH - padH).coerceAtLeast((80 * dp).toInt())
                     val hFromW = (avW.toLong() * surfH / surfW).toInt()
                     val finalW: Int; val finalH: Int
                     if (hFromW <= avH) { finalW = avW; finalH = hFromW }
@@ -202,28 +435,27 @@ class EditorActivity : AppCompatActivity() {
     @Suppress("OVERRIDE_DEPRECATION")
     override fun onBackPressed() { save(); @Suppress("DEPRECATION") super.onBackPressed() }
 
-    // ── Load ─────────────────────────────────────────────────────────────────
+    // ── Load ──────────────────────────────────────────────────────────────────
     private fun loadData() {
-        val bgF = File(filesDir, WallpaperPrefs.FILE_ORIGINAL)
-        val fgF = File(filesDir, WallpaperPrefs.FILE_FOREGROUND)
+        wallpaperMode = WallpaperPrefs.getWallpaperMode(this)
+        editSlot = if (wallpaperMode == WallpaperPrefs.MODE_DAY_NIGHT) WallpaperPrefs.EDIT_DAY
+                   else WallpaperPrefs.EDIT_NONE
+
+        val p   = WallpaperPrefs.loadSlot(this, editSlot)
+        val bgF = WallpaperPrefs.getBgFileForSlot(this, editSlot)
+        val fgF = WallpaperPrefs.getFgFileForSlot(this, editSlot)
         val ftF = File(filesDir, WallpaperPrefs.FILE_FONT)
         val bgBmp = if (bgF.exists()) BitmapFactory.decodeFile(bgF.absolutePath) else null
         val fgBmp = if (fgF.exists()) BitmapFactory.decodeFile(fgF.absolutePath) else null
         val tf    = if (ftF.exists()) try { Typeface.createFromFile(ftF) } catch (_: Exception) { null } else null
         loadedBgBmp = bgBmp
-        val saved = WallpaperPrefs.getColor(this)
-        clockColor = if (saved != WallpaperPrefs.NO_COLOR) saved else Color.WHITE
+        clockColor = if (p.color != WallpaperPrefs.NO_COLOR) p.color else Color.WHITE
         with(b.editorView) {
-            clockX=WallpaperPrefs.getClkX(this@EditorActivity); clockY=WallpaperPrefs.getClkY(this@EditorActivity)
-            clockSz=WallpaperPrefs.getClkSz(this@EditorActivity); clockRot=WallpaperPrefs.getClkRot(this@EditorActivity)
-            dateX=WallpaperPrefs.getDateX(this@EditorActivity); dateY=WallpaperPrefs.getDateY(this@EditorActivity)
-            dateSz=WallpaperPrefs.getDateSz(this@EditorActivity); dateRot=WallpaperPrefs.getDateRot(this@EditorActivity)
-            subjX=WallpaperPrefs.getSubjX(this@EditorActivity); subjY=WallpaperPrefs.getSubjY(this@EditorActivity)
-            subjSc=WallpaperPrefs.getSubjSc(this@EditorActivity); subjRot=WallpaperPrefs.getSubjRot(this@EditorActivity)
-            bgRot=WallpaperPrefs.getBgRot(this@EditorActivity)
-            use24hr=WallpaperPrefs.getUse24(this@EditorActivity); showSeconds=WallpaperPrefs.getSecs(this@EditorActivity)
-            bgDim=WallpaperPrefs.getBgDim(this@EditorActivity); clockDim=WallpaperPrefs.getClkDim(this@EditorActivity)
-            subjDim=WallpaperPrefs.getSubjDim(this@EditorActivity)
+            clockX=p.clockX; clockY=p.clockY; clockSz=p.clockSz; clockRot=p.clockRot
+            dateX=p.dateX;   dateY=p.dateY;   dateSz=p.dateSz;   dateRot=p.dateRot
+            subjX=p.subjX;   subjY=p.subjY;   subjSc=p.subjSc;   subjRot=p.subjRot
+            bgRot=p.bgRot;   use24hr=p.use24; showSeconds=p.secs
+            bgDim=p.bgDim;   clockDim=p.clkDim; subjDim=p.subjDim
             this.clockColor = this@EditorActivity.clockColor
             setData(bgBmp, fgBmp, tf)
         }
@@ -283,51 +515,39 @@ class EditorActivity : AppCompatActivity() {
 
     // ── Panels ────────────────────────────────────────────────────────────────
     private fun setupPanels() {
-        b.sliderBgRot.value = WallpaperPrefs.getBgRot(this).coerceIn(-180f,180f)
-        b.tvBgRotVal.text   = "${b.sliderBgRot.value.toInt()}°"
-        b.sliderBgRot.addOnChangeListener { _, v, _ -> b.tvBgRotVal.text="${v.toInt()}°"; b.editorView.bgRot=v }
+        // Set initial values before wiring listeners to avoid spurious callbacks
+        b.switchAutoHide.isChecked = WallpaperPrefs.getAutoHide(this)
 
-        b.sliderBgDim.value = (WallpaperPrefs.getBgDim(this)*100f).coerceIn(0f,100f)
-        b.tvBgDimVal.text   = "${b.sliderBgDim.value.toInt()}%"
-        b.sliderBgDim.addOnChangeListener { _, v, _ -> b.tvBgDimVal.text="${v.toInt()}%"; b.editorView.bgDim=v/100f }
-
-        b.switch24hr.isChecked    = WallpaperPrefs.getUse24(this)
-        b.switchSeconds.isChecked = WallpaperPrefs.getSecs(this)
+        b.sliderBgRot.addOnChangeListener  { _, v, _ -> b.tvBgRotVal.text  = "${v.toInt()}°"; b.editorView.bgRot    = v }
+        b.sliderBgDim.addOnChangeListener  { _, v, _ -> b.tvBgDimVal.text  = "${v.toInt()}%"; b.editorView.bgDim    = v / 100f }
+        b.sliderClkRot.addOnChangeListener  { _, v, _ -> b.tvClkRotVal.text  = "${v.toInt()}°"; b.editorView.clockRot  = v }
+        b.sliderDateRot.addOnChangeListener { _, v, _ -> b.tvDateRotVal.text = "${v.toInt()}°"; b.editorView.dateRot   = v }
+        b.sliderTimeDim.addOnChangeListener { _, v, _ -> b.tvTimeDimVal.text = "${v.toInt()}%"; b.editorView.clockDim  = v / 100f }
+        b.sliderSubjRot.addOnChangeListener { _, v, _ -> b.tvSubjRotVal.text = "${v.toInt()}°"; b.editorView.subjRot   = v }
+        b.sliderSubjDim.addOnChangeListener { _, v, _ -> b.tvSubjDimVal.text = "${v.toInt()}%"; b.editorView.subjDim   = v / 100f }
+        b.sliderBgSat.addOnChangeListener   { _, v, _ -> b.tvBgSatVal.text   = "${v.toInt()}%"; b.editorView.bgSat     = v / 100f }
+        b.sliderSubjSat.addOnChangeListener { _, v, _ -> b.tvSubjSatVal.text = "${v.toInt()}%"; b.editorView.subjSat   = v / 100f }
         b.switch24hr.setOnCheckedChangeListener    { _, c -> b.editorView.use24hr     = c }
         b.switchSeconds.setOnCheckedChangeListener { _, c -> b.editorView.showSeconds = c }
+        b.switchAutoHide.setOnCheckedChangeListener { _, v -> WallpaperPrefs.setAutoHide(this, v) }
 
-        b.sliderClkRot.value = WallpaperPrefs.getClkRot(this).coerceIn(-180f,180f)
-        b.tvClkRotVal.text   = "${b.sliderClkRot.value.toInt()}°"
-        b.sliderClkRot.addOnChangeListener { _, v, _ -> b.tvClkRotVal.text="${v.toInt()}°"; b.editorView.clockRot=v }
-
-        b.sliderDateRot.value = WallpaperPrefs.getDateRot(this).coerceIn(-180f,180f)
-        b.tvDateRotVal.text   = "${b.sliderDateRot.value.toInt()}°"
-        b.sliderDateRot.addOnChangeListener { _, v, _ -> b.tvDateRotVal.text="${v.toInt()}°"; b.editorView.dateRot=v }
-
-        b.sliderTimeDim.value = (WallpaperPrefs.getClkDim(this)*100f).coerceIn(0f,100f)
-        b.tvTimeDimVal.text   = "${b.sliderTimeDim.value.toInt()}%"
-        b.sliderTimeDim.addOnChangeListener { _, v, _ -> b.tvTimeDimVal.text="${v.toInt()}%"; b.editorView.clockDim=v/100f }
+        b.chipPickColor.setOnCheckedChangeListener { _, checked ->
+            if (checked) {
+                b.colorPicker.visibility = View.VISIBLE
+                b.colorPicker.animate().alpha(1f).setDuration(220).setInterpolator(DecelerateInterpolator(1.5f)).start()
+            } else {
+                b.colorPicker.animate().alpha(0f).setDuration(160)
+                    .withEndAction { b.colorPicker.visibility = View.GONE }.start()
+            }
+        }
+        b.colorPicker.onColorChanged = { c -> clockColor = c; b.editorView.clockColor = c; updateSwatch(c) }
 
         val ftF = File(filesDir, WallpaperPrefs.FILE_FONT)
         b.tvFontStatus.text = if (ftF.exists()) ftF.name else "System default"
 
-        updateSwatch(clockColor)
-        b.colorPicker.color   = clockColor
         b.colorPicker.visibility = View.GONE; b.colorPicker.alpha = 0f
         b.chipPickColor.isChecked = false
-        b.chipPickColor.setOnCheckedChangeListener { _, checked ->
-            if (checked) { b.colorPicker.visibility=View.VISIBLE; b.colorPicker.animate().alpha(1f).setDuration(220).setInterpolator(DecelerateInterpolator(1.5f)).start() }
-            else { b.colorPicker.animate().alpha(0f).setDuration(160).withEndAction { b.colorPicker.visibility=View.GONE }.start() }
-        }
-        b.colorPicker.onColorChanged = { c -> clockColor=c; b.editorView.clockColor=c; updateSwatch(c) }
-
-        b.sliderSubjRot.value = WallpaperPrefs.getSubjRot(this).coerceIn(-180f,180f)
-        b.tvSubjRotVal.text   = "${b.sliderSubjRot.value.toInt()}°"
-        b.sliderSubjRot.addOnChangeListener { _, v, _ -> b.tvSubjRotVal.text="${v.toInt()}°"; b.editorView.subjRot=v }
-
-        b.sliderSubjDim.value = (WallpaperPrefs.getSubjDim(this)*100f).coerceIn(0f,100f)
-        b.tvSubjDimVal.text   = "${b.sliderSubjDim.value.toInt()}%"
-        b.sliderSubjDim.addOnChangeListener { _, v, _ -> b.tvSubjDimVal.text="${v.toInt()}%"; b.editorView.subjDim=v/100f }
+        syncSlidersFromEditor()
     }
 
     private fun updateSwatch(c: Int) {
@@ -362,19 +582,23 @@ class EditorActivity : AppCompatActivity() {
 
     private fun launch(bg: Boolean) { if (bg) pickBg.launch("image/*") else pickFg.launch("image/*") }
 
-    private fun replaceImg(uri: Uri, file: String) {
-        // Only reset positions on first-ever pick; preserve layout on replacement
-        val isFirstTime = !File(filesDir, file).exists()
+    private fun replaceImg(uri: Uri, isBg: Boolean) {
+        val targetFile = if (isBg) WallpaperPrefs.getBgFileForSlot(this, editSlot)
+                         else      WallpaperPrefs.getFgFileForSlot(this, editSlot)
+        val isFirstTime = !targetFile.exists()
         try {
             val bmp = contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it) }
                 ?: return toast("Failed to read image.")
             val r  = minOf(2048f / bmp.width, 2048f / bmp.height)
             val sc = if (r < 1f) Bitmap.createScaledBitmap(bmp,(bmp.width*r).toInt(),(bmp.height*r).toInt(),true) else bmp
-            FileOutputStream(File(filesDir, file)).use { sc.compress(Bitmap.CompressFormat.PNG, 100, it) }
-            if (isFirstTime) WallpaperPrefs.clearPositions(this)
-            if (file == WallpaperPrefs.FILE_ORIGINAL) loadedBgBmp = sc
+            FileOutputStream(targetFile).use { sc.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            if (isFirstTime) WallpaperPrefs.saveToSlot(this, editSlot,
+                WallpaperPrefs.loadSlot(this, editSlot).copy(
+                    clockX=WallpaperPrefs.DEF_CLK_X, clockY=WallpaperPrefs.DEF_CLK_Y,
+                    subjX=WallpaperPrefs.DEF_SUBJ_X, subjY=WallpaperPrefs.DEF_SUBJ_Y))
+            if (isBg) loadedBgBmp = sc
             b.previewCard.animate().alpha(0.3f).setDuration(100).withEndAction {
-                loadData(); setupPanels()
+                loadSlotIntoEditor(editSlot)
                 b.previewCard.animate().alpha(1f).setDuration(260).setInterpolator(DecelerateInterpolator()).start()
             }.start()
         } catch (e: Exception) { toast("Error: ${e.message}") }
@@ -382,13 +606,8 @@ class EditorActivity : AppCompatActivity() {
 
     // ── Save & set wallpaper ──────────────────────────────────────────────────
     private fun save() {
-        with(b.editorView) {
-            WallpaperPrefs.saveAll(this@EditorActivity,
-                clockX,clockY,clockSz,clockRot,dateX,dateY,dateSz,dateRot,
-                subjX,subjY,subjSc,subjRot,bgRot,clockColor,
-                b.switch24hr.isChecked,b.switchSeconds.isChecked,
-                bgDim,clockDim,subjDim)
-        }
+        saveCurrentSlot()
+        WallpaperPrefs.setWallpaperMode(this, wallpaperMode)
     }
 
     private fun saveAndLaunch() {

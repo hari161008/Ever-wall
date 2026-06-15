@@ -5,11 +5,13 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
+import androidx.core.widget.NestedScrollView;
 import androidx.viewbinding.ViewBinding;
 import androidx.viewbinding.ViewBindings;
 import com.everwall.ColorPickerView;
@@ -36,6 +38,18 @@ public final class ActivityEditorBinding implements ViewBinding {
   public final MaterialButton btnChangeSubject;
 
   @NonNull
+  public final MaterialButton btnDay;
+
+  @NonNull
+  public final FrameLayout btnLock;
+
+  @NonNull
+  public final MaterialButton btnMode;
+
+  @NonNull
+  public final MaterialButton btnNight;
+
+  @NonNull
   public final MaterialButton btnPickFont;
 
   @NonNull
@@ -49,6 +63,12 @@ public final class ActivityEditorBinding implements ViewBinding {
 
   @NonNull
   public final MaterialButton btnReset;
+
+  @NonNull
+  public final MaterialButton btnSetDayTime;
+
+  @NonNull
+  public final MaterialButton btnSetNightTime;
 
   @NonNull
   public final MaterialButton btnSetWallpaper;
@@ -66,10 +86,19 @@ public final class ActivityEditorBinding implements ViewBinding {
   public final LinearLayout controlsRoot;
 
   @NonNull
+  public final LinearLayout dayNightContainer;
+
+  @NonNull
+  public final LinearLayout dayNightOverlay;
+
+  @NonNull
   public final FrameLayout dragHandle;
 
   @NonNull
   public final WallpaperEditorView editorView;
+
+  @NonNull
+  public final ImageView ivLock;
 
   @NonNull
   public final LinearLayout panelBg;
@@ -81,16 +110,25 @@ public final class ActivityEditorBinding implements ViewBinding {
   public final LinearLayout panelTime;
 
   @NonNull
+  public final NestedScrollView panelsScroll;
+
+  @NonNull
   public final MaterialCardView previewCard;
 
   @NonNull
   public final FrameLayout previewContainer;
 
   @NonNull
+  public final LinearLayout setTimeContainer;
+
+  @NonNull
   public final Slider sliderBgDim;
 
   @NonNull
   public final Slider sliderBgRot;
+
+  @NonNull
+  public final Slider sliderBgSat;
 
   @NonNull
   public final Slider sliderClkRot;
@@ -105,10 +143,16 @@ public final class ActivityEditorBinding implements ViewBinding {
   public final Slider sliderSubjRot;
 
   @NonNull
+  public final Slider sliderSubjSat;
+
+  @NonNull
   public final Slider sliderTimeDim;
 
   @NonNull
   public final SwitchMaterial switch24hr;
+
+  @NonNull
+  public final SwitchMaterial switchAutoHide;
 
   @NonNull
   public final SwitchMaterial switchSeconds;
@@ -126,6 +170,9 @@ public final class ActivityEditorBinding implements ViewBinding {
   public final TextView tvBgRotVal;
 
   @NonNull
+  public final TextView tvBgSatVal;
+
+  @NonNull
   public final TextView tvClkRotVal;
 
   @NonNull
@@ -141,64 +188,91 @@ public final class ActivityEditorBinding implements ViewBinding {
   public final TextView tvSubjRotVal;
 
   @NonNull
+  public final TextView tvSubjSatVal;
+
+  @NonNull
   public final TextView tvTimeDimVal;
 
   private ActivityEditorBinding(@NonNull CoordinatorLayout rootView,
       @NonNull MaterialButton btnChangeBg, @NonNull MaterialButton btnChangeSubject,
-      @NonNull MaterialButton btnPickFont, @NonNull MaterialButton btnPillBg,
-      @NonNull MaterialButton btnPillSubject, @NonNull MaterialButton btnPillTime,
-      @NonNull MaterialButton btnReset, @NonNull MaterialButton btnSetWallpaper,
-      @NonNull Chip chipPickColor, @NonNull ColorPickerView colorPicker, @NonNull View colorSwatch,
-      @NonNull LinearLayout controlsRoot, @NonNull FrameLayout dragHandle,
-      @NonNull WallpaperEditorView editorView, @NonNull LinearLayout panelBg,
-      @NonNull LinearLayout panelSubject, @NonNull LinearLayout panelTime,
+      @NonNull MaterialButton btnDay, @NonNull FrameLayout btnLock, @NonNull MaterialButton btnMode,
+      @NonNull MaterialButton btnNight, @NonNull MaterialButton btnPickFont,
+      @NonNull MaterialButton btnPillBg, @NonNull MaterialButton btnPillSubject,
+      @NonNull MaterialButton btnPillTime, @NonNull MaterialButton btnReset,
+      @NonNull MaterialButton btnSetDayTime, @NonNull MaterialButton btnSetNightTime,
+      @NonNull MaterialButton btnSetWallpaper, @NonNull Chip chipPickColor,
+      @NonNull ColorPickerView colorPicker, @NonNull View colorSwatch,
+      @NonNull LinearLayout controlsRoot, @NonNull LinearLayout dayNightContainer,
+      @NonNull LinearLayout dayNightOverlay, @NonNull FrameLayout dragHandle,
+      @NonNull WallpaperEditorView editorView, @NonNull ImageView ivLock,
+      @NonNull LinearLayout panelBg, @NonNull LinearLayout panelSubject,
+      @NonNull LinearLayout panelTime, @NonNull NestedScrollView panelsScroll,
       @NonNull MaterialCardView previewCard, @NonNull FrameLayout previewContainer,
-      @NonNull Slider sliderBgDim, @NonNull Slider sliderBgRot, @NonNull Slider sliderClkRot,
+      @NonNull LinearLayout setTimeContainer, @NonNull Slider sliderBgDim,
+      @NonNull Slider sliderBgRot, @NonNull Slider sliderBgSat, @NonNull Slider sliderClkRot,
       @NonNull Slider sliderDateRot, @NonNull Slider sliderSubjDim, @NonNull Slider sliderSubjRot,
-      @NonNull Slider sliderTimeDim, @NonNull SwitchMaterial switch24hr,
+      @NonNull Slider sliderSubjSat, @NonNull Slider sliderTimeDim,
+      @NonNull SwitchMaterial switch24hr, @NonNull SwitchMaterial switchAutoHide,
       @NonNull SwitchMaterial switchSeconds, @NonNull MaterialToolbar toolbar,
       @NonNull LinearLayout toolbarContainer, @NonNull TextView tvBgDimVal,
-      @NonNull TextView tvBgRotVal, @NonNull TextView tvClkRotVal, @NonNull TextView tvDateRotVal,
-      @NonNull TextView tvFontStatus, @NonNull TextView tvSubjDimVal,
-      @NonNull TextView tvSubjRotVal, @NonNull TextView tvTimeDimVal) {
+      @NonNull TextView tvBgRotVal, @NonNull TextView tvBgSatVal, @NonNull TextView tvClkRotVal,
+      @NonNull TextView tvDateRotVal, @NonNull TextView tvFontStatus,
+      @NonNull TextView tvSubjDimVal, @NonNull TextView tvSubjRotVal,
+      @NonNull TextView tvSubjSatVal, @NonNull TextView tvTimeDimVal) {
     this.rootView = rootView;
     this.btnChangeBg = btnChangeBg;
     this.btnChangeSubject = btnChangeSubject;
+    this.btnDay = btnDay;
+    this.btnLock = btnLock;
+    this.btnMode = btnMode;
+    this.btnNight = btnNight;
     this.btnPickFont = btnPickFont;
     this.btnPillBg = btnPillBg;
     this.btnPillSubject = btnPillSubject;
     this.btnPillTime = btnPillTime;
     this.btnReset = btnReset;
+    this.btnSetDayTime = btnSetDayTime;
+    this.btnSetNightTime = btnSetNightTime;
     this.btnSetWallpaper = btnSetWallpaper;
     this.chipPickColor = chipPickColor;
     this.colorPicker = colorPicker;
     this.colorSwatch = colorSwatch;
     this.controlsRoot = controlsRoot;
+    this.dayNightContainer = dayNightContainer;
+    this.dayNightOverlay = dayNightOverlay;
     this.dragHandle = dragHandle;
     this.editorView = editorView;
+    this.ivLock = ivLock;
     this.panelBg = panelBg;
     this.panelSubject = panelSubject;
     this.panelTime = panelTime;
+    this.panelsScroll = panelsScroll;
     this.previewCard = previewCard;
     this.previewContainer = previewContainer;
+    this.setTimeContainer = setTimeContainer;
     this.sliderBgDim = sliderBgDim;
     this.sliderBgRot = sliderBgRot;
+    this.sliderBgSat = sliderBgSat;
     this.sliderClkRot = sliderClkRot;
     this.sliderDateRot = sliderDateRot;
     this.sliderSubjDim = sliderSubjDim;
     this.sliderSubjRot = sliderSubjRot;
+    this.sliderSubjSat = sliderSubjSat;
     this.sliderTimeDim = sliderTimeDim;
     this.switch24hr = switch24hr;
+    this.switchAutoHide = switchAutoHide;
     this.switchSeconds = switchSeconds;
     this.toolbar = toolbar;
     this.toolbarContainer = toolbarContainer;
     this.tvBgDimVal = tvBgDimVal;
     this.tvBgRotVal = tvBgRotVal;
+    this.tvBgSatVal = tvBgSatVal;
     this.tvClkRotVal = tvClkRotVal;
     this.tvDateRotVal = tvDateRotVal;
     this.tvFontStatus = tvFontStatus;
     this.tvSubjDimVal = tvSubjDimVal;
     this.tvSubjRotVal = tvSubjRotVal;
+    this.tvSubjSatVal = tvSubjSatVal;
     this.tvTimeDimVal = tvTimeDimVal;
   }
 
@@ -241,6 +315,30 @@ public final class ActivityEditorBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.btn_day;
+      MaterialButton btnDay = ViewBindings.findChildViewById(rootView, id);
+      if (btnDay == null) {
+        break missingId;
+      }
+
+      id = R.id.btn_lock;
+      FrameLayout btnLock = ViewBindings.findChildViewById(rootView, id);
+      if (btnLock == null) {
+        break missingId;
+      }
+
+      id = R.id.btn_mode;
+      MaterialButton btnMode = ViewBindings.findChildViewById(rootView, id);
+      if (btnMode == null) {
+        break missingId;
+      }
+
+      id = R.id.btn_night;
+      MaterialButton btnNight = ViewBindings.findChildViewById(rootView, id);
+      if (btnNight == null) {
+        break missingId;
+      }
+
       id = R.id.btn_pick_font;
       MaterialButton btnPickFont = ViewBindings.findChildViewById(rootView, id);
       if (btnPickFont == null) {
@@ -268,6 +366,18 @@ public final class ActivityEditorBinding implements ViewBinding {
       id = R.id.btn_reset;
       MaterialButton btnReset = ViewBindings.findChildViewById(rootView, id);
       if (btnReset == null) {
+        break missingId;
+      }
+
+      id = R.id.btn_set_day_time;
+      MaterialButton btnSetDayTime = ViewBindings.findChildViewById(rootView, id);
+      if (btnSetDayTime == null) {
+        break missingId;
+      }
+
+      id = R.id.btn_set_night_time;
+      MaterialButton btnSetNightTime = ViewBindings.findChildViewById(rootView, id);
+      if (btnSetNightTime == null) {
         break missingId;
       }
 
@@ -301,6 +411,18 @@ public final class ActivityEditorBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.day_night_container;
+      LinearLayout dayNightContainer = ViewBindings.findChildViewById(rootView, id);
+      if (dayNightContainer == null) {
+        break missingId;
+      }
+
+      id = R.id.day_night_overlay;
+      LinearLayout dayNightOverlay = ViewBindings.findChildViewById(rootView, id);
+      if (dayNightOverlay == null) {
+        break missingId;
+      }
+
       id = R.id.drag_handle;
       FrameLayout dragHandle = ViewBindings.findChildViewById(rootView, id);
       if (dragHandle == null) {
@@ -310,6 +432,12 @@ public final class ActivityEditorBinding implements ViewBinding {
       id = R.id.editor_view;
       WallpaperEditorView editorView = ViewBindings.findChildViewById(rootView, id);
       if (editorView == null) {
+        break missingId;
+      }
+
+      id = R.id.iv_lock;
+      ImageView ivLock = ViewBindings.findChildViewById(rootView, id);
+      if (ivLock == null) {
         break missingId;
       }
 
@@ -331,6 +459,12 @@ public final class ActivityEditorBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.panels_scroll;
+      NestedScrollView panelsScroll = ViewBindings.findChildViewById(rootView, id);
+      if (panelsScroll == null) {
+        break missingId;
+      }
+
       id = R.id.preview_card;
       MaterialCardView previewCard = ViewBindings.findChildViewById(rootView, id);
       if (previewCard == null) {
@@ -343,6 +477,12 @@ public final class ActivityEditorBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.set_time_container;
+      LinearLayout setTimeContainer = ViewBindings.findChildViewById(rootView, id);
+      if (setTimeContainer == null) {
+        break missingId;
+      }
+
       id = R.id.slider_bg_dim;
       Slider sliderBgDim = ViewBindings.findChildViewById(rootView, id);
       if (sliderBgDim == null) {
@@ -352,6 +492,12 @@ public final class ActivityEditorBinding implements ViewBinding {
       id = R.id.slider_bg_rot;
       Slider sliderBgRot = ViewBindings.findChildViewById(rootView, id);
       if (sliderBgRot == null) {
+        break missingId;
+      }
+
+      id = R.id.slider_bg_sat;
+      Slider sliderBgSat = ViewBindings.findChildViewById(rootView, id);
+      if (sliderBgSat == null) {
         break missingId;
       }
 
@@ -379,6 +525,12 @@ public final class ActivityEditorBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.slider_subj_sat;
+      Slider sliderSubjSat = ViewBindings.findChildViewById(rootView, id);
+      if (sliderSubjSat == null) {
+        break missingId;
+      }
+
       id = R.id.slider_time_dim;
       Slider sliderTimeDim = ViewBindings.findChildViewById(rootView, id);
       if (sliderTimeDim == null) {
@@ -388,6 +540,12 @@ public final class ActivityEditorBinding implements ViewBinding {
       id = R.id.switch_24hr;
       SwitchMaterial switch24hr = ViewBindings.findChildViewById(rootView, id);
       if (switch24hr == null) {
+        break missingId;
+      }
+
+      id = R.id.switch_auto_hide;
+      SwitchMaterial switchAutoHide = ViewBindings.findChildViewById(rootView, id);
+      if (switchAutoHide == null) {
         break missingId;
       }
 
@@ -421,6 +579,12 @@ public final class ActivityEditorBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.tv_bg_sat_val;
+      TextView tvBgSatVal = ViewBindings.findChildViewById(rootView, id);
+      if (tvBgSatVal == null) {
+        break missingId;
+      }
+
       id = R.id.tv_clk_rot_val;
       TextView tvClkRotVal = ViewBindings.findChildViewById(rootView, id);
       if (tvClkRotVal == null) {
@@ -451,6 +615,12 @@ public final class ActivityEditorBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.tv_subj_sat_val;
+      TextView tvSubjSatVal = ViewBindings.findChildViewById(rootView, id);
+      if (tvSubjSatVal == null) {
+        break missingId;
+      }
+
       id = R.id.tv_time_dim_val;
       TextView tvTimeDimVal = ViewBindings.findChildViewById(rootView, id);
       if (tvTimeDimVal == null) {
@@ -458,12 +628,14 @@ public final class ActivityEditorBinding implements ViewBinding {
       }
 
       return new ActivityEditorBinding((CoordinatorLayout) rootView, btnChangeBg, btnChangeSubject,
-          btnPickFont, btnPillBg, btnPillSubject, btnPillTime, btnReset, btnSetWallpaper,
-          chipPickColor, colorPicker, colorSwatch, controlsRoot, dragHandle, editorView, panelBg,
-          panelSubject, panelTime, previewCard, previewContainer, sliderBgDim, sliderBgRot,
-          sliderClkRot, sliderDateRot, sliderSubjDim, sliderSubjRot, sliderTimeDim, switch24hr,
-          switchSeconds, toolbar, toolbarContainer, tvBgDimVal, tvBgRotVal, tvClkRotVal,
-          tvDateRotVal, tvFontStatus, tvSubjDimVal, tvSubjRotVal, tvTimeDimVal);
+          btnDay, btnLock, btnMode, btnNight, btnPickFont, btnPillBg, btnPillSubject, btnPillTime,
+          btnReset, btnSetDayTime, btnSetNightTime, btnSetWallpaper, chipPickColor, colorPicker,
+          colorSwatch, controlsRoot, dayNightContainer, dayNightOverlay, dragHandle, editorView,
+          ivLock, panelBg, panelSubject, panelTime, panelsScroll, previewCard, previewContainer,
+          setTimeContainer, sliderBgDim, sliderBgRot, sliderBgSat, sliderClkRot, sliderDateRot,
+          sliderSubjDim, sliderSubjRot, sliderSubjSat, sliderTimeDim, switch24hr, switchAutoHide,
+          switchSeconds, toolbar, toolbarContainer, tvBgDimVal, tvBgRotVal, tvBgSatVal, tvClkRotVal,
+          tvDateRotVal, tvFontStatus, tvSubjDimVal, tvSubjRotVal, tvSubjSatVal, tvTimeDimVal);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));

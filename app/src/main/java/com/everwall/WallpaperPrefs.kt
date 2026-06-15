@@ -23,14 +23,17 @@ object WallpaperPrefs {
     private const val KEY_BG_DIM   = "bg_dim"
     private const val KEY_CLK_DIM  = "clk_dim"
     private const val KEY_SUBJ_DIM = "subj_dim"
+    private const val KEY_BG_SAT   = "bg_sat"
+    private const val KEY_SUBJ_SAT = "subj_sat"
+    private const val KEY_AUTO_HIDE = "auto_hide_lock"
 
     // Default element positions / sizes
     const val DEF_CLK_X   = 0.5f;  const val DEF_CLK_Y   = 0.28f
     const val DEF_CLK_SZ  = 0.12f; const val DEF_CLK_ROT = 0f
     const val DEF_DATE_X  = 0.5f;  const val DEF_DATE_Y  = 0.42f
     const val DEF_DATE_SZ = 0.034f;const val DEF_DATE_ROT = 0f
-    const val DEF_SUBJ_X  = 0.5f;  const val DEF_SUBJ_Y  = 0.68f
-    const val DEF_SUBJ_SC = 0.5f;  const val DEF_SUBJ_ROT = 0f
+    const val DEF_SUBJ_X  = 0.5f;  const val DEF_SUBJ_Y  = 0.5f
+    const val DEF_SUBJ_SC = 1.0f;  const val DEF_SUBJ_ROT = 0f
     const val DEF_BG_ROT  = 0f
 
     fun saveAll(ctx: Context,
@@ -88,6 +91,90 @@ object WallpaperPrefs {
     fun getBgDim(ctx: Context)     = prefs(ctx).getFloat(KEY_BG_DIM,   0f)
     fun getClkDim(ctx: Context)    = prefs(ctx).getFloat(KEY_CLK_DIM,  0f)
     fun getSubjDim(ctx: Context)   = prefs(ctx).getFloat(KEY_SUBJ_DIM, 0f)
+    fun getAutoHide(ctx: Context)  = prefs(ctx).getBoolean(KEY_AUTO_HIDE, false)
+    fun setAutoHide(ctx: Context, v: Boolean) = prefs(ctx).edit().putBoolean(KEY_AUTO_HIDE, v).apply()
+
+    // ── Mode / Day-Night slot system ──────────────────────────────────────────
+    const val MODE_NONE      = 0
+    const val MODE_DAY_NIGHT = 1
+    const val EDIT_NONE      = 0
+    const val EDIT_DAY       = 1
+    const val EDIT_NIGHT     = 2
+
+    private const val META_PREFS  = "ew_meta"
+    private const val KEY_WMODE   = "wmode"
+    private const val KEY_DAY_M   = "day_mins"
+    private const val KEY_NIGHT_M = "night_mins"
+
+    private fun metaPrefs(ctx: Context) = ctx.getSharedPreferences(META_PREFS, Context.MODE_PRIVATE)
+
+    fun slotPrefs(ctx: Context, slot: Int) = ctx.getSharedPreferences(
+        when(slot) { EDIT_DAY -> "ew_day"; EDIT_NIGHT -> "ew_night"; else -> PREFS },
+        Context.MODE_PRIVATE)
+
+    fun getWallpaperMode(ctx: Context)             = metaPrefs(ctx).getInt(KEY_WMODE, MODE_NONE)
+    fun setWallpaperMode(ctx: Context, v: Int)     = metaPrefs(ctx).edit().putInt(KEY_WMODE, v).apply()
+    fun getDayMins(ctx: Context)                   = metaPrefs(ctx).getInt(KEY_DAY_M, -1)
+    fun setDayMins(ctx: Context, v: Int)           = metaPrefs(ctx).edit().putInt(KEY_DAY_M, v).apply()
+    fun getNightMins(ctx: Context)                 = metaPrefs(ctx).getInt(KEY_NIGHT_M, -1)
+    fun setNightMins(ctx: Context, v: Int)         = metaPrefs(ctx).edit().putInt(KEY_NIGHT_M, v).apply()
+
+    fun getBgFileForSlot(ctx: Context, slot: Int) = java.io.File(ctx.filesDir,
+        when(slot) { EDIT_DAY -> "ew_bg_day.png"; EDIT_NIGHT -> "ew_bg_night.png"; else -> FILE_ORIGINAL })
+    fun getFgFileForSlot(ctx: Context, slot: Int) = java.io.File(ctx.filesDir,
+        when(slot) { EDIT_DAY -> "ew_fg_day.png"; EDIT_NIGHT -> "ew_fg_night.png"; else -> FILE_FOREGROUND })
+
+    fun activeSlot(ctx: Context): Int {
+        if (getWallpaperMode(ctx) != MODE_DAY_NIGHT) return EDIT_NONE
+        val d = getDayMins(ctx); val n = getNightMins(ctx)
+        if (d < 0 || n < 0) return EDIT_NONE
+        val cal = java.util.Calendar.getInstance()
+        val now = cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 + cal.get(java.util.Calendar.MINUTE)
+        val isDay = if (d <= n) now in d until n else now >= d || now < n
+        return if (isDay) EDIT_DAY else EDIT_NIGHT
+    }
+
+    data class WallPrefs(
+        val clockX: Float, val clockY: Float, val clockSz: Float, val clockRot: Float,
+        val dateX: Float,  val dateY: Float,  val dateSz: Float,  val dateRot: Float,
+        val subjX: Float,  val subjY: Float,  val subjSc: Float,  val subjRot: Float,
+        val bgRot: Float,  val color: Int,    val use24: Boolean, val secs: Boolean,
+        val bgDim: Float,  val clkDim: Float, val subjDim: Float,
+        val bgSat: Float = 1f, val subjSat: Float = 1f
+    )
+
+    fun loadSlot(ctx: Context, slot: Int): WallPrefs {
+        val sp = slotPrefs(ctx, slot)
+        return WallPrefs(
+            sp.getFloat(KEY_CLK_X,    DEF_CLK_X),   sp.getFloat(KEY_CLK_Y,   DEF_CLK_Y),
+            sp.getFloat(KEY_CLK_SZ,   DEF_CLK_SZ),  sp.getFloat(KEY_CLK_ROT, DEF_CLK_ROT),
+            sp.getFloat(KEY_DATE_X,   DEF_DATE_X),   sp.getFloat(KEY_DATE_Y,  DEF_DATE_Y),
+            sp.getFloat(KEY_DATE_SZ,  DEF_DATE_SZ),  sp.getFloat(KEY_DATE_ROT,DEF_DATE_ROT),
+            sp.getFloat(KEY_SUBJ_X,   DEF_SUBJ_X),   sp.getFloat(KEY_SUBJ_Y,  DEF_SUBJ_Y),
+            sp.getFloat(KEY_SUBJ_SC,  DEF_SUBJ_SC),  sp.getFloat(KEY_SUBJ_ROT,DEF_SUBJ_ROT),
+            sp.getFloat(KEY_BG_ROT,   DEF_BG_ROT),
+            sp.getInt(KEY_COLOR, NO_COLOR),
+            sp.getBoolean(KEY_USE24, false), sp.getBoolean(KEY_SECS, false),
+            sp.getFloat(KEY_BG_DIM, 0f), sp.getFloat(KEY_CLK_DIM, 0f), sp.getFloat(KEY_SUBJ_DIM, 0f),
+            sp.getFloat(KEY_BG_SAT, 1f), sp.getFloat(KEY_SUBJ_SAT, 1f)
+        )
+    }
+
+    fun saveToSlot(ctx: Context, slot: Int, p: WallPrefs) =
+        slotPrefs(ctx, slot).edit().also { e ->
+            e.putFloat(KEY_CLK_X, p.clockX);  e.putFloat(KEY_CLK_Y,   p.clockY)
+            e.putFloat(KEY_CLK_SZ, p.clockSz); e.putFloat(KEY_CLK_ROT, p.clockRot)
+            e.putFloat(KEY_DATE_X, p.dateX);   e.putFloat(KEY_DATE_Y,  p.dateY)
+            e.putFloat(KEY_DATE_SZ, p.dateSz); e.putFloat(KEY_DATE_ROT,p.dateRot)
+            e.putFloat(KEY_SUBJ_X, p.subjX);   e.putFloat(KEY_SUBJ_Y,  p.subjY)
+            e.putFloat(KEY_SUBJ_SC, p.subjSc); e.putFloat(KEY_SUBJ_ROT,p.subjRot)
+            e.putFloat(KEY_BG_ROT, p.bgRot)
+            e.putInt(KEY_COLOR, p.color)
+            e.putBoolean(KEY_USE24, p.use24);  e.putBoolean(KEY_SECS, p.secs)
+            e.putFloat(KEY_BG_DIM, p.bgDim);   e.putFloat(KEY_CLK_DIM, p.clkDim)
+            e.putFloat(KEY_SUBJ_DIM, p.subjDim)
+            e.putFloat(KEY_BG_SAT, p.bgSat);   e.putFloat(KEY_SUBJ_SAT, p.subjSat)
+        }.apply()
 
     private fun prefs(ctx: Context) = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 }

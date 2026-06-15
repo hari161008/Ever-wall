@@ -18,11 +18,12 @@ class WallpaperEditorView @JvmOverloads constructor(
 
     var clockX = 0.5f;  var clockY   = 0.28f; var clockSz  = 0.12f;  var clockRot = 0f
     var dateX  = 0.5f;  var dateY    = 0.42f; var dateSz   = 0.034f; var dateRot  = 0f
-    var subjX  = 0.5f;  var subjY    = 0.68f; var subjSc   = 0.5f;   var subjRot  = 0f
+    var subjX  = 0.5f;  var subjY    = 0.5f; var subjSc   = 1.0f;   var subjRot  = 0f
     var bgRot  = 0f
     var use24hr = false; var showSeconds = false
     var clockColor = Color.WHITE
     var bgDim = 0f; var clockDim = 0f; var subjDim = 0f
+    var bgSat = 1f;  var subjSat = 1f
 
     var activeElement = ActiveElement.NONE
         private set
@@ -64,6 +65,24 @@ class WallpaperEditorView @JvmOverloads constructor(
         pathEffect = DashPathEffect(floatArrayOf(14f, 8f), 0f)
     }
 
+    // Cached reference width for clock so the selection box never reflows on tick
+    private var _refClkW   = 0f
+    private var _refClkKey = ""
+
+    private fun clockRefWidth(): Float {
+        val key = "$use24hr/$showSeconds/${tPaint.textSize.toInt()}"
+        if (key != _refClkKey) {
+            val cal = Calendar.getInstance()
+            var max = 0f
+            for (h in 0..23) for (m in 0..59) {
+                cal.set(Calendar.HOUR_OF_DAY, h); cal.set(Calendar.MINUTE, m); cal.set(Calendar.SECOND, 0)
+                max = maxOf(max, tPaint.measureText(timeStr(cal.time)))
+            }
+            _refClkW = max; _refClkKey = key
+        }
+        return _refClkW
+    }
+
     private val f12   = SimpleDateFormat("h:mm",       Locale.getDefault())
     private val f12s  = SimpleDateFormat("h:mm:ss",    Locale.getDefault())
     private val f24   = SimpleDateFormat("HH:mm",      Locale.getDefault())
@@ -71,13 +90,16 @@ class WallpaperEditorView @JvmOverloads constructor(
     private val fDate = SimpleDateFormat("EEE, MMM d", Locale.getDefault())
 
     private val tick = object : Runnable {
-        override fun run() { invalidate(); postDelayed(this, 1000L) }
+        override fun run() {
+            if (isAttachedToWindow) { invalidate(); postDelayed(this, 1000L) }
+        }
     }
 
     fun setData(bg: Bitmap?, fg: Bitmap?, typeface: Typeface?) {
         rawBg = bg; rawFg = fg; tf = typeface; applyTypeface(); invalidate()
     }
-
+    fun setBg(bg: Bitmap?) { rawBg = bg; invalidate() }
+    fun setFg(fg: Bitmap?) { rawFg = fg; invalidate() }
     fun setFontOnly(typeface: Typeface?) { tf = typeface; applyTypeface(); invalidate() }
 
     private fun applyTypeface() {
@@ -110,9 +132,11 @@ class WallpaperEditorView @JvmOverloads constructor(
             val rotRad = Math.toRadians(bgRot.toDouble())
             val extra  = (Math.abs(Math.cos(rotRad)) + Math.abs(Math.sin(rotRad))).toFloat()
             val scale  = maxOf(W / bg.width, H / bg.height) * extra
+            val bgCm = ColorMatrix(); bgCm.setSaturation(bgSat)
+            val bgDrawPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { colorFilter = ColorMatrixColorFilter(bgCm) }
             canvas.save()
             canvas.translate(W / 2f, H / 2f); canvas.rotate(bgRot); canvas.scale(scale, scale)
-            canvas.drawBitmap(bg, -bg.width / 2f, -bg.height / 2f, null)
+            canvas.drawBitmap(bg, -bg.width / 2f, -bg.height / 2f, bgDrawPaint)
             canvas.restore()
         }
         if (bgDim > 0f) {
@@ -131,7 +155,7 @@ class WallpaperEditorView @JvmOverloads constructor(
         canvas.drawText(tStr, 0f, -(tPaint.descent() + tPaint.ascent()) / 2f, tPaint)
         canvas.restore()
         if (activeElement == ActiveElement.CLOCK) {
-            val tw = tPaint.measureText(tStr)
+            val tw = clockRefWidth()
             canvas.save(); canvas.translate(clockX * W, clockY * H); canvas.rotate(clockRot)
             val r = RectF(-tw/2f-16f*dp, -clkPx/2f-12f*dp, tw/2f+16f*dp, clkPx/2f+12f*dp)
             canvas.drawRoundRect(r, 12f*dp, 12f*dp, selGlow)
@@ -161,10 +185,13 @@ class WallpaperEditorView @JvmOverloads constructor(
         rawFg?.let { fg ->
             val base  = minOf(W / fg.width, H / fg.height)
             val total = base * subjSc
-            val scale = (1f - subjDim).coerceIn(0f, 1f)
-            val cm = ColorMatrix(); cm.set(floatArrayOf(
-                scale,0f,0f,0f,0f,  0f,scale,0f,0f,0f,
-                0f,0f,scale,0f,0f,  0f,0f,0f,1f,0f))
+            val dim   = (1f - subjDim).coerceIn(0f, 1f)
+            val cm = ColorMatrix()
+            val dimCm = ColorMatrix(); dimCm.set(floatArrayOf(
+                dim,0f,0f,0f,0f,  0f,dim,0f,0f,0f,
+                0f,0f,dim,0f,0f,  0f,0f,0f,1f,0f))
+            val satCm = ColorMatrix(); satCm.setSaturation(subjSat)
+            cm.setConcat(dimCm, satCm)
             fgPaint.colorFilter = ColorMatrixColorFilter(cm); fgPaint.alpha = 255
             canvas.save(); canvas.translate(subjX * W, subjY * H); canvas.rotate(subjRot)
             canvas.scale(total, total)
@@ -238,7 +265,7 @@ class WallpaperEditorView @JvmOverloads constructor(
     private fun handleTap(x: Float, y: Float) {
         val W = width.toFloat(); val H = height.toFloat(); val dp = resources.displayMetrics.density
         tPaint.textSize = clockSz * H
-        val tw = tPaint.measureText(timeStr(Date()))
+        val tw = clockRefWidth()
         val clockHit = hitTest(x,y,clockX*W,clockY*H, tw+40f*dp, clockSz*H+30f*dp, clockRot)
         dPaint.textSize = dateSz * H
         val dw = dPaint.measureText(fDate.format(Date()))

@@ -1,5 +1,17 @@
 [
     {
+        "merged": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-merged_res-4:\\drawable_bg_toolbar_pill.xml.flat",
+        "source": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-main-6:\\drawable\\bg_toolbar_pill.xml"
+    },
+    {
+        "merged": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-merged_res-4:\\drawable_ic_mode.xml.flat",
+        "source": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-main-6:\\drawable\\ic_mode.xml"
+    },
+    {
+        "merged": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-merged_res-4:\\drawable_ic_reset.xml.flat",
+        "source": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-main-6:\\drawable\\ic_reset.xml"
+    },
+    {
         "merged": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-merged_res-4:\\anim_panel_slide_out.xml.flat",
         "source": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-main-6:\\anim\\panel_slide_out.xml"
     },
@@ -8,8 +20,20 @@
         "source": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-main-6:\\drawable\\ic_person_add.xml"
     },
     {
+        "merged": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-merged_res-4:\\drawable_ic_lock.xml.flat",
+        "source": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-main-6:\\drawable\\ic_lock.xml"
+    },
+    {
         "merged": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-merged_res-4:\\mipmap-anydpi-v26_ic_launcher.xml.flat",
         "source": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-main-6:\\mipmap-anydpi-v26\\ic_launcher.xml"
+    },
+    {
+        "merged": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-merged_res-4:\\drawable_bg_lock_circle.xml.flat",
+        "source": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-main-6:\\drawable\\bg_lock_circle.xml"
+    },
+    {
+        "merged": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-merged_res-4:\\drawable_ic_info_outline.xml.flat",
+        "source": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-main-6:\\drawable\\ic_info_outline.xml"
     },
     {
         "merged": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-merged_res-4:\\layout_activity_main.xml.flat",
@@ -36,6 +60,14 @@
         "source": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-main-6:\\anim\\slide_down_exit.xml"
     },
     {
+        "merged": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-merged_res-4:\\drawable_ic_day.xml.flat",
+        "source": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-main-6:\\drawable\\ic_day.xml"
+    },
+    {
+        "merged": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-merged_res-4:\\drawable_bg_day_night_holder.xml.flat",
+        "source": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-main-6:\\drawable\\bg_day_night_holder.xml"
+    },
+    {
         "merged": "com.everwall.app-merged_res-4:/layout_activity_editor.xml.flat",
         "source": "com.everwall.app-main-6:/layout/activity_editor.xml"
     },
@@ -48,6 +80,10 @@
         "source": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-main-6:\\anim\\slide_up_enter.xml"
     },
     {
+        "merged": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-merged_res-4:\\drawable_ic_night.xml.flat",
+        "source": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-main-6:\\drawable\\ic_night.xml"
+    },
+    {
         "merged": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-merged_res-4:\\anim_panel_slide_in.xml.flat",
         "source": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-main-6:\\anim\\panel_slide_in.xml"
     },
@@ -58,10 +94,6 @@
     {
         "merged": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-merged_res-4:\\drawable_bg_hero_gradient.xml.flat",
         "source": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-main-6:\\drawable\\bg_hero_gradient.xml"
-    },
-    {
-        "merged": "com.everwall.app-merged_res-4:/drawable_ic_reset.xml.flat",
-        "source": "com.everwall.app-main-6:/drawable/ic_reset.xml"
     },
     {
         "merged": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-merged_res-4:\\xml_wallpaper.xml.flat",
@@ -96,10 +128,6 @@
         "source": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-main-6:\\drawable\\bg_drag_handle.xml"
     },
     {
-        "merged": "com.everwall.app-merged_res-4:/drawable_ic_info_outline.xml.flat",
-        "source": "com.everwall.app-main-6:/drawable/ic_info_outline.xml"
-    },
-    {
         "merged": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-merged_res-4:\\drawable_bg_font_preview.xml.flat",
         "source": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-main-6:\\drawable\\bg_font_preview.xml"
     },
@@ -108,15 +136,15 @@
         "source": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-main-6:\\drawable\\ic_add_photo.xml"
     },
     {
+        "merged": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-merged_res-4:\\drawable_ic_lock_open.xml.flat",
+        "source": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-main-6:\\drawable\\ic_lock_open.xml"
+    },
+    {
         "merged": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-merged_res-4:\\layout_activity_editor.xml.flat",
         "source": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-main-6:\\layout\\activity_editor.xml"
     },
     {
         "merged": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-merged_res-4:\\drawable_bg_step_badge.xml.flat",
         "source": "C:\\Users\\SRIRADHAKRSNA\\.gradle\\daemon\\8.4\\com.everwall.app-main-6:\\drawable\\bg_step_badge.xml"
-    },
-    {
-        "merged": "com.everwall.app-merged_res-4:/drawable_bg_toolbar_pill.xml.flat",
-        "source": "com.everwall.app-main-6:/drawable/bg_toolbar_pill.xml"
     }
 ]
