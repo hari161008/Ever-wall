@@ -32,6 +32,10 @@ import com.everwall.databinding.ActivityEditorBinding
 import java.io.File
 import java.io.FileOutputStream
 import java.util.Locale
+import android.view.LayoutInflater
+import com.everwall.databinding.DialogAboutBinding
+import com.everwall.databinding.DialogWelcomeBinding
+import com.google.android.material.bottomsheet.BottomSheetDialog
 
 class EditorActivity : AppCompatActivity() {
 
@@ -116,6 +120,8 @@ class EditorActivity : AppCompatActivity() {
             b.controlsRoot.clipToOutline = true
         }
         animateEntrance()
+        b.btnSettings.setOnClickListener { showAboutDialog() }
+        showWelcomeIfFirstLaunch()
     }
 
     override fun onPause() { save(); super.onPause() }
@@ -184,10 +190,6 @@ class EditorActivity : AppCompatActivity() {
 
     private fun showDayNightUI(show: Boolean) {
         b.dayNightOverlay.visibility = if (show) View.VISIBLE else View.GONE
-        // Adjust peek height to accommodate the day/night bar
-        val dp = resources.displayMetrics.density
-        val barH = if (show) (120 * dp).toInt() else 0
-        bsb.peekHeight = (PEEK_HEIGHT_DP * dp).toInt() + barH
     }
 
     private fun pillDayNight(slot: Int) {
@@ -216,8 +218,8 @@ class EditorActivity : AppCompatActivity() {
     private fun updateDayNightTimeLabels() {
         val d = WallpaperPrefs.getDayMins(this)
         val n = WallpaperPrefs.getNightMins(this)
-        b.btnSetDayTime.text   = if (d >= 0) "Day: ${fmtMins(d)}"   else "Set Day"
-        b.btnSetNightTime.text = if (n >= 0) "Night: ${fmtMins(n)}" else "Set Night"
+        b.tvDayTime.text   = if (d >= 0) fmtMins(d) else "--:--"
+        b.tvNightTime.text = if (n >= 0) fmtMins(n) else "--:--"
     }
 
     private fun fmtMins(mins: Int): String {
@@ -384,7 +386,7 @@ class EditorActivity : AppCompatActivity() {
             object : ViewTreeObserver.OnGlobalLayoutListener {
                 override fun onGlobalLayout() {
                     val contH = b.previewContainer.height
-                    val contW = b.previewContainer.width
+                    val contW = b.previewArea.width   // full width; sidebar is overlay
                     if (contH <= 100 || contW <= 0) return
                     b.previewContainer.viewTreeObserver.removeOnGlobalLayoutListener(this)
                     val dp       = resources.displayMetrics.density
@@ -393,7 +395,9 @@ class EditorActivity : AppCompatActivity() {
                     val toolbarH = b.toolbarContainer.height.takeIf { it > 0 }
                         ?: TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 56f, resources.displayMetrics).toInt()
                     val padH     = (14 * dp).toInt()
-                    val avW = (contW - padH * 2).coerceAtLeast(1)
+                    // Reserve right space for the floating sidebar (~130dp)
+                    val sidebarReserve = (130 * dp).toInt()
+                    val avW = (contW - padH * 2 - sidebarReserve).coerceAtLeast(1)
                     val avH = (contH - peekH - gapH - toolbarH - padH).coerceAtLeast((80 * dp).toInt())
                     val hFromW = (avW.toLong() * surfH / surfW).toInt()
                     val finalW: Int; val finalH: Int
@@ -640,4 +644,79 @@ class EditorActivity : AppCompatActivity() {
     }
 
     private fun toast(m: String) = Toast.makeText(this, m, Toast.LENGTH_SHORT).show()
+
+    // ── About / Settings ──────────────────────────────────────────────────────
+    private fun showAboutDialog() {
+        val dialog = BottomSheetDialog(this)
+        val db = DialogAboutBinding.inflate(layoutInflater)
+
+        // Tint the banner with dynamic primary color
+        val bannerGd = android.graphics.drawable.GradientDrawable(
+            android.graphics.drawable.GradientDrawable.Orientation.TL_BR,
+            intArrayOf(
+                attr(com.google.android.material.R.attr.colorPrimary),
+                attr(com.google.android.material.R.attr.colorTertiary)
+            )
+        )
+        db.aboutBannerFrame.background = bannerGd
+
+        // Tint icon circles with dynamic colors
+        val primaryCircleGd = android.graphics.drawable.GradientDrawable().apply {
+            shape = android.graphics.drawable.GradientDrawable.OVAL
+            setColor(attr(com.google.android.material.R.attr.colorPrimary))
+        }
+        val secondaryCircleGd = android.graphics.drawable.GradientDrawable().apply {
+            shape = android.graphics.drawable.GradientDrawable.OVAL
+            setColor(attr(com.google.android.material.R.attr.colorSecondary))
+        }
+        db.root.findViewWithTag<android.widget.FrameLayout>("icon_circle_primary")?.background = primaryCircleGd
+        db.root.findViewWithTag<android.widget.FrameLayout>("icon_circle_secondary")?.background = secondaryCircleGd
+
+        try {
+            val pInfo = packageManager.getPackageInfo(packageName, 0)
+            db.tvVersion.text = "Version ${pInfo.versionName}"
+        } catch (_: Exception) {}
+
+        db.cardSupportGroup.setOnClickListener {
+            openUrl("https://t.me/EverlastingAndroidTweak")
+        }
+        db.cardAppChannel.setOnClickListener {
+            openUrl("https://t.me/CoolAppStore")
+        }
+
+        dialog.setContentView(db.root)
+        dialog.show()
+    }
+
+    private fun showWelcomeIfFirstLaunch() {
+        val prefs = getSharedPreferences("everwall_prefs", MODE_PRIVATE)
+        if (prefs.getBoolean("welcome_shown", false)) return
+        prefs.edit().putBoolean("welcome_shown", true).apply()
+
+        val dialog = BottomSheetDialog(this)
+        dialog.setCancelable(false)
+        val wb = DialogWelcomeBinding.inflate(layoutInflater)
+
+        // Tint banner with system dynamic colors (colorPrimary → colorTertiary gradient)
+        val primary   = attr(com.google.android.material.R.attr.colorPrimary)
+        val tertiary  = attr(com.google.android.material.R.attr.colorTertiary)
+        val bannerGd = android.graphics.drawable.GradientDrawable(
+            android.graphics.drawable.GradientDrawable.Orientation.TL_BR,
+            intArrayOf(primary, tertiary)
+        )
+        wb.welcomeBannerFrame.background = bannerGd
+
+        wb.btnWelcomeContinue.setOnClickListener { dialog.dismiss() }
+        wb.btnWelcomeJoin.setOnClickListener {
+            openUrl("https://t.me/EverlastingAndroidTweak")
+            dialog.dismiss()
+        }
+        dialog.setContentView(wb.root)
+        dialog.show()
+    }
+
+    private fun openUrl(url: String) {
+        try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
+        catch (_: Exception) { toast("Cannot open link") }
+    }
 }

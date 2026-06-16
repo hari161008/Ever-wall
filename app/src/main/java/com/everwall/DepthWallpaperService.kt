@@ -9,6 +9,7 @@ import android.graphics.*
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.service.wallpaper.WallpaperService
 import android.view.SurfaceHolder
 import androidx.core.content.ContextCompat
@@ -28,10 +29,15 @@ class DepthWallpaperService : WallpaperService() {
         private var visible = false
         private var tf: Typeface? = null
 
-        // Auto-hide: broadcast sets isScreenOff immediately; unlock detected via KM in draw()
-        private var isScreenOff   = false   // set instantly on ACTION_SCREEN_OFF
-        private var clockHidden   = false   // tracks current hide state for fade-in trigger
-        private var clockFadeAlpha = 1f     // 0 = transparent, 1 = fully visible
+        // Auto-hide state
+        private var isScreenOff    = false
+        private var screenOnTimeMs = 0L   // elapsedRealtime() when screen last turned on
+        private var clockHidden    = false
+        private var clockFadeAlpha = 1f
+
+        // Grace period after screen-on before we trust KeyguardManager.
+        // Prevents the brief clock flash while the lock screen is still drawing.
+        private val SCREEN_ON_GRACE_MS = 600L
 
         private val f12   = SimpleDateFormat("h:mm",       Locale.getDefault())
         private val f12s  = SimpleDateFormat("h:mm:ss",    Locale.getDefault())
@@ -48,8 +54,8 @@ class DepthWallpaperService : WallpaperService() {
             override fun run() { drawFrame(); if (visible) handler.postDelayed(this, 1000L) }
         }
 
-        private val FADE_STEP_MS    = 16L
-        private val FADE_DURATION   = 700f
+        private val FADE_STEP_MS  = 16L
+        private val FADE_DURATION = 700f
         private val fadeInTick = object : Runnable {
             override fun run() {
                 clockFadeAlpha = (clockFadeAlpha + FADE_STEP_MS / FADE_DURATION).coerceAtMost(1f)
@@ -58,19 +64,25 @@ class DepthWallpaperService : WallpaperService() {
             }
         }
 
-        // Instantly hide clock on screen-off; unlock is detected via KeyguardManager in draw()
         private val screenReceiver = object : BroadcastReceiver() {
             override fun onReceive(ctx: Context, intent: Intent) {
-                if (intent.action == Intent.ACTION_SCREEN_OFF) {
-                    if (WallpaperPrefs.getAutoHide(this@DepthWallpaperService)) {
-                        isScreenOff    = true
-                        clockHidden    = true
-                        clockFadeAlpha = 0f
-                        handler.removeCallbacks(fadeInTick)
-                        drawFrame()
+                when (intent.action) {
+                    Intent.ACTION_SCREEN_OFF -> {
+                        isScreenOff = true
+                        if (WallpaperPrefs.getAutoHide(this@DepthWallpaperService)) {
+                            clockHidden    = true
+                            clockFadeAlpha = 0f
+                            handler.removeCallbacks(fadeInTick)
+                            drawFrame()
+                        }
                     }
-                } else if (intent.action == Intent.ACTION_SCREEN_ON) {
-                    isScreenOff = false  // screen is on again; KM check in draw() handles lock state
+                    Intent.ACTION_SCREEN_ON -> {
+                        // Record when screen turned on. We stay hidden during the grace
+                        // period so the lock screen has time to fully draw before we
+                        // consult KeyguardManager — this prevents the brief clock flash.
+                        isScreenOff    = false
+                        screenOnTimeMs = SystemClock.elapsedRealtime()
+                    }
                 }
             }
         }
@@ -92,18 +104,25 @@ class DepthWallpaperService : WallpaperService() {
 
         private fun load() {
             val ftF = File(filesDir, WallpaperPrefs.FILE_FONT)
-            tf    = if (ftF.exists()) try { Typeface.createFromFile(ftF) } catch(_:Exception) { null } else null
+            tf    = if (ftF.exists()) try { Typeface.createFromFile(ftF) } catch (_: Exception) { null } else null
             tPaint.typeface = tf ?: Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             dPaint.typeface = tf ?: Typeface.create("sans-serif-light", Typeface.NORMAL)
-            // Snapshot initial lock state
+
+            // Initialise hide-state from KeyguardManager (covers cold-start while locked)
             if (WallpaperPrefs.getAutoHide(this@DepthWallpaperService)) {
-                val km = getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
-                if (km?.isKeyguardLocked == true) {
-                    isScreenOff = false; clockHidden = true; clockFadeAlpha = 0f
-                } else {
-                    clockHidden = false; clockFadeAlpha = 1f
-                }
+                val km     = getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
+                val locked = km?.isKeyguardLocked == true
+                isScreenOff    = false
+                clockHidden    = locked
+                clockFadeAlpha = if (locked) 0f else 1f
+                // Treat a cold-start-while-locked the same as a fresh screen-on so the
+                // grace period fires and we don't reveal the clock too early.
+                if (locked) screenOnTimeMs = SystemClock.elapsedRealtime()
+            } else {
+                clockHidden    = false
+                clockFadeAlpha = 1f
             }
+
             val slot = WallpaperPrefs.activeSlot(this@DepthWallpaperService)
             lastSlot = slot
             loadForSlot(slot)
@@ -151,19 +170,19 @@ class DepthWallpaperService : WallpaperService() {
         }
 
         private fun buildBg(w: Int, h: Int, rot: Float) {
-            if (w==cachedW && h==cachedH && rot==cachedBgRot && cachedBg!=null) return
-            cachedW=w; cachedH=h; cachedBgRot=rot
+            if (w == cachedW && h == cachedH && rot == cachedBgRot && cachedBg != null) return
+            cachedW = w; cachedH = h; cachedBgRot = rot
             val bg = rawBg ?: run { cachedBg?.recycle(); cachedBg = null; return }
             val rotRad = Math.toRadians(rot.toDouble())
             val extra  = (Math.abs(Math.cos(rotRad)) + Math.abs(Math.sin(rotRad))).toFloat()
-            val scale  = maxOf(w.toFloat()/bg.width, h.toFloat()/bg.height) * extra
-            val sw = (bg.width*scale).toInt().coerceAtLeast(1)
-            val sh = (bg.height*scale).toInt().coerceAtLeast(1)
+            val scale  = maxOf(w.toFloat() / bg.width, h.toFloat() / bg.height) * extra
+            val sw = (bg.width  * scale).toInt().coerceAtLeast(1)
+            val sh = (bg.height * scale).toInt().coerceAtLeast(1)
             val scaled = Bitmap.createScaledBitmap(bg, sw, sh, true)
             val out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
             val c = Canvas(out); c.drawColor(Color.BLACK)
-            c.save(); c.translate(w/2f, h/2f); c.rotate(rot)
-            c.drawBitmap(scaled, -sw/2f, -sh/2f, null); c.restore()
+            c.save(); c.translate(w / 2f, h / 2f); c.rotate(rot)
+            c.drawBitmap(scaled, -sw / 2f, -sh / 2f, null); c.restore()
             cachedBg?.recycle()
             cachedBg = out
         }
@@ -206,25 +225,38 @@ class DepthWallpaperService : WallpaperService() {
                 canvas.drawRect(0f, 0f, W, H, dimPaint)
             }
 
-            val now = Date()
-            val tStr = when { p.use24&&p.secs -> f24s.format(now); p.use24 -> f24.format(now)
-                              p.secs -> f12s.format(now); else -> f12.format(now) }
+            val now  = Date()
+            val tStr = when {
+                p.use24 && p.secs -> f24s.format(now); p.use24 -> f24.format(now)
+                p.secs            -> f12s.format(now); else     -> f12.format(now)
+            }
             val dStr = fDate.format(now)
 
-            // Auto-hide logic: screen-off hides instantly; unlock detected via KM → fade in
+            // ── Auto-hide logic ───────────────────────────────────────────────
+            // We determine shouldHide by:
+            //   1. isScreenOff flag (set by ACTION_SCREEN_OFF, cleared by ACTION_SCREEN_ON)
+            //   2. Grace period: for SCREEN_ON_GRACE_MS after screen-on, always hide —
+            //      this prevents the brief clock flash before the lock screen draws
+            //   3. After grace period: ask KeyguardManager whether the keyguard is locked
             val autoHide = WallpaperPrefs.getAutoHide(ctx)
             if (autoHide) {
-                val km = getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
-                val shouldHide = isScreenOff || km?.isKeyguardLocked == true
+                val elapsedSinceOn = SystemClock.elapsedRealtime() - screenOnTimeMs
+                val inGrace        = elapsedSinceOn < SCREEN_ON_GRACE_MS
+                val shouldHide = when {
+                    isScreenOff -> true
+                    inGrace     -> true
+                    else        -> {
+                        val km = getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
+                        km?.isKeyguardLocked == true
+                    }
+                }
                 when {
                     shouldHide && !clockHidden -> {
-                        // Just became hidden
                         clockHidden = true; clockFadeAlpha = 0f
                         handler.removeCallbacks(fadeInTick)
                     }
                     !shouldHide && clockHidden -> {
-                        // Just became visible — start smooth fade-in
-                        clockHidden = false; clockFadeAlpha = 0f
+                        clockHidden = false
                         handler.removeCallbacks(fadeInTick)
                         handler.post(fadeInTick)
                     }
@@ -238,33 +270,33 @@ class DepthWallpaperService : WallpaperService() {
                 tPaint.color    = dimmedColor(color, p.clkDim, alpha)
                 tPaint.textSize = p.clockSz * H
                 tPaint.typeface = tf ?: Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-                canvas.save(); canvas.translate(p.clockX*W, p.clockY*H); canvas.rotate(p.clockRot)
-                canvas.drawText(tStr, 0f, -(tPaint.descent()+tPaint.ascent())/2f, tPaint)
+                canvas.save(); canvas.translate(p.clockX * W, p.clockY * H); canvas.rotate(p.clockRot)
+                canvas.drawText(tStr, 0f, -(tPaint.descent() + tPaint.ascent()) / 2f, tPaint)
                 canvas.restore()
 
                 val dateBase = Color.argb(
-                    (Color.alpha(color)*0.85f).toInt().coerceIn(0,255),
+                    (Color.alpha(color) * 0.85f).toInt().coerceIn(0, 255),
                     Color.red(color), Color.green(color), Color.blue(color))
                 dPaint.color    = dimmedColor(dateBase, p.clkDim, alpha)
                 dPaint.textSize = p.dateSz * H
                 dPaint.typeface = tf ?: Typeface.create("sans-serif-light", Typeface.NORMAL)
-                canvas.save(); canvas.translate(p.dateX*W, p.dateY*H); canvas.rotate(p.dateRot)
-                canvas.drawText(dStr, 0f, -(dPaint.descent()+dPaint.ascent())/2f, dPaint)
+                canvas.save(); canvas.translate(p.dateX * W, p.dateY * H); canvas.rotate(p.dateRot)
+                canvas.drawText(dStr, 0f, -(dPaint.descent() + dPaint.ascent()) / 2f, dPaint)
                 canvas.restore()
             }
 
             rawFg?.let { fg ->
-                val base = minOf(W/fg.width, H/fg.height); val total = base * p.subjSc
-                val dim  = (1f - p.subjDim).coerceIn(0f, 1f)
+                val base  = minOf(W / fg.width, H / fg.height); val total = base * p.subjSc
+                val dim   = (1f - p.subjDim).coerceIn(0f, 1f)
                 val dimCm = ColorMatrix(); dimCm.set(floatArrayOf(
-                    dim,0f,0f,0f,0f, 0f,dim,0f,0f,0f, 0f,0f,dim,0f,0f, 0f,0f,0f,1f,0f))
+                    dim, 0f, 0f, 0f, 0f,  0f, dim, 0f, 0f, 0f,  0f, 0f, dim, 0f, 0f,  0f, 0f, 0f, 1f, 0f))
                 val satCm = ColorMatrix(); satCm.setSaturation(p.subjSat)
-                val cm = ColorMatrix(); cm.setConcat(dimCm, satCm)
+                val cm    = ColorMatrix(); cm.setConcat(dimCm, satCm)
                 fgPaint.colorFilter = ColorMatrixColorFilter(cm)
                 fgPaint.alpha = 255
-                canvas.save(); canvas.translate(p.subjX*W, p.subjY*H); canvas.rotate(p.subjRot)
+                canvas.save(); canvas.translate(p.subjX * W, p.subjY * H); canvas.rotate(p.subjRot)
                 canvas.scale(total, total)
-                canvas.drawBitmap(fg, -fg.width/2f, -fg.height/2f, fgPaint)
+                canvas.drawBitmap(fg, -fg.width / 2f, -fg.height / 2f, fgPaint)
                 canvas.restore()
             }
         }
@@ -273,7 +305,7 @@ class DepthWallpaperService : WallpaperService() {
             val o = BitmapFactory.Options().apply { inJustDecodeBounds = true }
             BitmapFactory.decodeFile(f.absolutePath, o)
             if (o.outWidth <= 0 || o.outHeight <= 0) return null
-            var s = 1; while ((o.outWidth/s) > max || (o.outHeight/s) > max) s *= 2
+            var s = 1; while ((o.outWidth / s) > max || (o.outHeight / s) > max) s *= 2
             return BitmapFactory.decodeFile(f.absolutePath, BitmapFactory.Options().apply { inSampleSize = s })
         }
     }

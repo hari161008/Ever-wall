@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="?attr/colorSurface">
+
+    <!-- Dynamic color banner -->
+    <FrameLayout
+        android:id="@+id/welcomeBannerFrame"
+        android:layout_width="match_parent"
+        android:layout_height="130dp">
+
+        <!-- Star sparkle -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="✦"
+                android:textSize="30sp"
+                android:textColor="#FFFFFFFF"
+                android:layout_marginBottom="6dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Welcome to Ever Wall"
+                android:textSize="20sp"
+                android:textColor="#FFFFFFFF"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.01" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Live Wallpaper Studio"
+                android:textSize="12sp"
+                android:textColor="#CCFFFFFF"
+                android:layout_marginTop="3dp"
+                android:letterSpacing="0.04" />
+
+        </LinearLayout>
+
+    </FrameLayout>
+
+    <!-- Body -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:paddingTop="20dp"
+        android:paddingBottom="24dp">
+
+        <!-- Support card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="0dp"
+            app:cardBackgroundColor="?attr/colorSecondaryContainer">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingStart="18dp"
+                android:paddingEnd="18dp"
+                android:paddingTop="16dp"
+                android:paddingBottom="16dp"
+                android:gravity="center">
+
+                <ImageView
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:src="@drawable/ic_telegram"
+                    android:tint="?attr/colorOnSecondaryContainer"
+                    android:layout_marginBottom="10dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Support me by joining my Telegram Channel and App Support Group"
+                    android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                    android:textColor="?attr/colorOnSecondaryContainer"
+                    android:textAlignment="center"
+                    android:lineSpacingExtra="3dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Navigate to Settings › About to find the links"
+                    android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                    android:textColor="?attr/colorOnSecondaryContainer"
+                    android:textAlignment="center"
+                    android:alpha="0.75"
+                    android:layout_marginTop="6dp" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Tag line -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Announcements · Updates · Feature Requests · Bug Fixes · Support"
+            android:textAppearance="@style/TextAppearance.Material3.LabelMedium"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textAlignment="center"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Buttons row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <!-- Continue (left, outlined) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_welcome_continue"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:text="Continue"
+                android:textSize="14sp"
+                app:cornerRadius="24dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="?attr/colorOutline" />
+
+            <!-- Join (right, filled pill with Telegram icon) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_welcome_join"
+                style="@style/Widget.Material3.Button"
+                android:layout_width="0dp"
+                android:layout_height="48dp"
+                android:layout_weight="1"
+                android:layout_marginStart="10dp"
+                android:text="Join"
+                android:textSize="14sp"
+                app:cornerRadius="24dp"
+                app:icon="@drawable/ic_telegram"
+                app:iconSize="17dp"
+                app:iconGravity="textStart"
+                app:iconPadding="6dp" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>

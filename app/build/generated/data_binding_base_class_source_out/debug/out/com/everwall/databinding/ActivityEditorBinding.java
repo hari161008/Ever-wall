@@ -65,13 +65,16 @@ public final class ActivityEditorBinding implements ViewBinding {
   public final MaterialButton btnReset;
 
   @NonNull
-  public final MaterialButton btnSetDayTime;
+  public final LinearLayout btnSetDayTime;
 
   @NonNull
-  public final MaterialButton btnSetNightTime;
+  public final LinearLayout btnSetNightTime;
 
   @NonNull
   public final MaterialButton btnSetWallpaper;
+
+  @NonNull
+  public final FrameLayout btnSettings;
 
   @NonNull
   public final Chip chipPickColor;
@@ -111,6 +114,9 @@ public final class ActivityEditorBinding implements ViewBinding {
 
   @NonNull
   public final NestedScrollView panelsScroll;
+
+  @NonNull
+  public final FrameLayout previewArea;
 
   @NonNull
   public final MaterialCardView previewCard;
@@ -179,7 +185,13 @@ public final class ActivityEditorBinding implements ViewBinding {
   public final TextView tvDateRotVal;
 
   @NonNull
+  public final TextView tvDayTime;
+
+  @NonNull
   public final TextView tvFontStatus;
+
+  @NonNull
+  public final TextView tvNightTime;
 
   @NonNull
   public final TextView tvSubjDimVal;
@@ -199,25 +211,25 @@ public final class ActivityEditorBinding implements ViewBinding {
       @NonNull MaterialButton btnNight, @NonNull MaterialButton btnPickFont,
       @NonNull MaterialButton btnPillBg, @NonNull MaterialButton btnPillSubject,
       @NonNull MaterialButton btnPillTime, @NonNull MaterialButton btnReset,
-      @NonNull MaterialButton btnSetDayTime, @NonNull MaterialButton btnSetNightTime,
-      @NonNull MaterialButton btnSetWallpaper, @NonNull Chip chipPickColor,
-      @NonNull ColorPickerView colorPicker, @NonNull View colorSwatch,
+      @NonNull LinearLayout btnSetDayTime, @NonNull LinearLayout btnSetNightTime,
+      @NonNull MaterialButton btnSetWallpaper, @NonNull FrameLayout btnSettings,
+      @NonNull Chip chipPickColor, @NonNull ColorPickerView colorPicker, @NonNull View colorSwatch,
       @NonNull LinearLayout controlsRoot, @NonNull LinearLayout dayNightContainer,
       @NonNull LinearLayout dayNightOverlay, @NonNull FrameLayout dragHandle,
       @NonNull WallpaperEditorView editorView, @NonNull ImageView ivLock,
       @NonNull LinearLayout panelBg, @NonNull LinearLayout panelSubject,
       @NonNull LinearLayout panelTime, @NonNull NestedScrollView panelsScroll,
-      @NonNull MaterialCardView previewCard, @NonNull FrameLayout previewContainer,
-      @NonNull LinearLayout setTimeContainer, @NonNull Slider sliderBgDim,
-      @NonNull Slider sliderBgRot, @NonNull Slider sliderBgSat, @NonNull Slider sliderClkRot,
-      @NonNull Slider sliderDateRot, @NonNull Slider sliderSubjDim, @NonNull Slider sliderSubjRot,
-      @NonNull Slider sliderSubjSat, @NonNull Slider sliderTimeDim,
+      @NonNull FrameLayout previewArea, @NonNull MaterialCardView previewCard,
+      @NonNull FrameLayout previewContainer, @NonNull LinearLayout setTimeContainer,
+      @NonNull Slider sliderBgDim, @NonNull Slider sliderBgRot, @NonNull Slider sliderBgSat,
+      @NonNull Slider sliderClkRot, @NonNull Slider sliderDateRot, @NonNull Slider sliderSubjDim,
+      @NonNull Slider sliderSubjRot, @NonNull Slider sliderSubjSat, @NonNull Slider sliderTimeDim,
       @NonNull SwitchMaterial switch24hr, @NonNull SwitchMaterial switchAutoHide,
       @NonNull SwitchMaterial switchSeconds, @NonNull MaterialToolbar toolbar,
       @NonNull LinearLayout toolbarContainer, @NonNull TextView tvBgDimVal,
       @NonNull TextView tvBgRotVal, @NonNull TextView tvBgSatVal, @NonNull TextView tvClkRotVal,
-      @NonNull TextView tvDateRotVal, @NonNull TextView tvFontStatus,
-      @NonNull TextView tvSubjDimVal, @NonNull TextView tvSubjRotVal,
+      @NonNull TextView tvDateRotVal, @NonNull TextView tvDayTime, @NonNull TextView tvFontStatus,
+      @NonNull TextView tvNightTime, @NonNull TextView tvSubjDimVal, @NonNull TextView tvSubjRotVal,
       @NonNull TextView tvSubjSatVal, @NonNull TextView tvTimeDimVal) {
     this.rootView = rootView;
     this.btnChangeBg = btnChangeBg;
@@ -234,6 +246,7 @@ public final class ActivityEditorBinding implements ViewBinding {
     this.btnSetDayTime = btnSetDayTime;
     this.btnSetNightTime = btnSetNightTime;
     this.btnSetWallpaper = btnSetWallpaper;
+    this.btnSettings = btnSettings;
     this.chipPickColor = chipPickColor;
     this.colorPicker = colorPicker;
     this.colorSwatch = colorSwatch;
@@ -247,6 +260,7 @@ public final class ActivityEditorBinding implements ViewBinding {
     this.panelSubject = panelSubject;
     this.panelTime = panelTime;
     this.panelsScroll = panelsScroll;
+    this.previewArea = previewArea;
     this.previewCard = previewCard;
     this.previewContainer = previewContainer;
     this.setTimeContainer = setTimeContainer;
@@ -269,7 +283,9 @@ public final class ActivityEditorBinding implements ViewBinding {
     this.tvBgSatVal = tvBgSatVal;
     this.tvClkRotVal = tvClkRotVal;
     this.tvDateRotVal = tvDateRotVal;
+    this.tvDayTime = tvDayTime;
     this.tvFontStatus = tvFontStatus;
+    this.tvNightTime = tvNightTime;
     this.tvSubjDimVal = tvSubjDimVal;
     this.tvSubjRotVal = tvSubjRotVal;
     this.tvSubjSatVal = tvSubjSatVal;
@@ -370,13 +386,13 @@ public final class ActivityEditorBinding implements ViewBinding {
       }
 
       id = R.id.btn_set_day_time;
-      MaterialButton btnSetDayTime = ViewBindings.findChildViewById(rootView, id);
+      LinearLayout btnSetDayTime = ViewBindings.findChildViewById(rootView, id);
       if (btnSetDayTime == null) {
         break missingId;
       }
 
       id = R.id.btn_set_night_time;
-      MaterialButton btnSetNightTime = ViewBindings.findChildViewById(rootView, id);
+      LinearLayout btnSetNightTime = ViewBindings.findChildViewById(rootView, id);
       if (btnSetNightTime == null) {
         break missingId;
       }
@@ -384,6 +400,12 @@ public final class ActivityEditorBinding implements ViewBinding {
       id = R.id.btn_set_wallpaper;
       MaterialButton btnSetWallpaper = ViewBindings.findChildViewById(rootView, id);
       if (btnSetWallpaper == null) {
+        break missingId;
+      }
+
+      id = R.id.btn_settings;
+      FrameLayout btnSettings = ViewBindings.findChildViewById(rootView, id);
+      if (btnSettings == null) {
         break missingId;
       }
 
@@ -462,6 +484,12 @@ public final class ActivityEditorBinding implements ViewBinding {
       id = R.id.panels_scroll;
       NestedScrollView panelsScroll = ViewBindings.findChildViewById(rootView, id);
       if (panelsScroll == null) {
+        break missingId;
+      }
+
+      id = R.id.preview_area;
+      FrameLayout previewArea = ViewBindings.findChildViewById(rootView, id);
+      if (previewArea == null) {
         break missingId;
       }
 
@@ -597,9 +625,21 @@ public final class ActivityEditorBinding implements ViewBinding {
         break missingId;
       }
 
+      id = R.id.tv_day_time;
+      TextView tvDayTime = ViewBindings.findChildViewById(rootView, id);
+      if (tvDayTime == null) {
+        break missingId;
+      }
+
       id = R.id.tv_font_status;
       TextView tvFontStatus = ViewBindings.findChildViewById(rootView, id);
       if (tvFontStatus == null) {
+        break missingId;
+      }
+
+      id = R.id.tv_night_time;
+      TextView tvNightTime = ViewBindings.findChildViewById(rootView, id);
+      if (tvNightTime == null) {
         break missingId;
       }
 
@@ -629,13 +669,14 @@ public final class ActivityEditorBinding implements ViewBinding {
 
       return new ActivityEditorBinding((CoordinatorLayout) rootView, btnChangeBg, btnChangeSubject,
           btnDay, btnLock, btnMode, btnNight, btnPickFont, btnPillBg, btnPillSubject, btnPillTime,
-          btnReset, btnSetDayTime, btnSetNightTime, btnSetWallpaper, chipPickColor, colorPicker,
-          colorSwatch, controlsRoot, dayNightContainer, dayNightOverlay, dragHandle, editorView,
-          ivLock, panelBg, panelSubject, panelTime, panelsScroll, previewCard, previewContainer,
-          setTimeContainer, sliderBgDim, sliderBgRot, sliderBgSat, sliderClkRot, sliderDateRot,
-          sliderSubjDim, sliderSubjRot, sliderSubjSat, sliderTimeDim, switch24hr, switchAutoHide,
-          switchSeconds, toolbar, toolbarContainer, tvBgDimVal, tvBgRotVal, tvBgSatVal, tvClkRotVal,
-          tvDateRotVal, tvFontStatus, tvSubjDimVal, tvSubjRotVal, tvSubjSatVal, tvTimeDimVal);
+          btnReset, btnSetDayTime, btnSetNightTime, btnSetWallpaper, btnSettings, chipPickColor,
+          colorPicker, colorSwatch, controlsRoot, dayNightContainer, dayNightOverlay, dragHandle,
+          editorView, ivLock, panelBg, panelSubject, panelTime, panelsScroll, previewArea,
+          previewCard, previewContainer, setTimeContainer, sliderBgDim, sliderBgRot, sliderBgSat,
+          sliderClkRot, sliderDateRot, sliderSubjDim, sliderSubjRot, sliderSubjSat, sliderTimeDim,
+          switch24hr, switchAutoHide, switchSeconds, toolbar, toolbarContainer, tvBgDimVal,
+          tvBgRotVal, tvBgSatVal, tvClkRotVal, tvDateRotVal, tvDayTime, tvFontStatus, tvNightTime,
+          tvSubjDimVal, tvSubjRotVal, tvSubjSatVal, tvTimeDimVal);
     }
     String missingId = rootView.getResources().getResourceName(id);
     throw new NullPointerException("Missing required view with ID: ".concat(missingId));
