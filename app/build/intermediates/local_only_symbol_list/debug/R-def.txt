@@ -66,6 +66,7 @@ color seed
 dimen pill_stroke
 drawable bg_about_banner
 drawable bg_about_deco_circle
+drawable bg_about_deco_ring
 drawable bg_card_selected
 drawable bg_color_swatch
 drawable bg_day_night_holder

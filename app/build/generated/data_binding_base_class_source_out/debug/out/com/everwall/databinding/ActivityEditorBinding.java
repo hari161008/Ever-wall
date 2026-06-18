@@ -167,7 +167,7 @@ public final class ActivityEditorBinding implements ViewBinding {
   public final MaterialToolbar toolbar;
 
   @NonNull
-  public final LinearLayout toolbarContainer;
+  public final FrameLayout toolbarContainer;
 
   @NonNull
   public final TextView tvBgDimVal;
@@ -226,7 +226,7 @@ public final class ActivityEditorBinding implements ViewBinding {
       @NonNull Slider sliderSubjRot, @NonNull Slider sliderSubjSat, @NonNull Slider sliderTimeDim,
       @NonNull SwitchMaterial switch24hr, @NonNull SwitchMaterial switchAutoHide,
       @NonNull SwitchMaterial switchSeconds, @NonNull MaterialToolbar toolbar,
-      @NonNull LinearLayout toolbarContainer, @NonNull TextView tvBgDimVal,
+      @NonNull FrameLayout toolbarContainer, @NonNull TextView tvBgDimVal,
       @NonNull TextView tvBgRotVal, @NonNull TextView tvBgSatVal, @NonNull TextView tvClkRotVal,
       @NonNull TextView tvDateRotVal, @NonNull TextView tvDayTime, @NonNull TextView tvFontStatus,
       @NonNull TextView tvNightTime, @NonNull TextView tvSubjDimVal, @NonNull TextView tvSubjRotVal,
@@ -590,7 +590,7 @@ public final class ActivityEditorBinding implements ViewBinding {
       }
 
       id = R.id.toolbar_container;
-      LinearLayout toolbarContainer = ViewBindings.findChildViewById(rootView, id);
+      FrameLayout toolbarContainer = ViewBindings.findChildViewById(rootView, id);
       if (toolbarContainer == null) {
         break missingId;
       }

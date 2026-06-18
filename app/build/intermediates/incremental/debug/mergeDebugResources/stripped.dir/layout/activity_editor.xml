@@ -6,11 +6,12 @@
     android:layout_height="match_parent"
     android:background="#0A0A0A">
 
-    <!-- Full-screen preview — preview_area is full-width so card centers properly -->
+    <!-- Full-screen preview — starts below the banner header -->
     <FrameLayout
         android:id="@+id/preview_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:layout_marginTop="72dp"
         android:background="#0A0A0A">
 
         <!-- preview_area is full-width; card is sized+centered by applyExactSurfaceAspectRatio -->
@@ -41,7 +42,7 @@
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:layout_gravity="top|end"
-            android:paddingTop="64dp"
+            android:paddingTop="12dp"
             android:paddingBottom="24dp"
             android:paddingEnd="4dp"
             android:paddingStart="2dp"
@@ -250,64 +251,96 @@
         </androidx.core.widget.NestedScrollView>
 
     </FrameLayout>
-    <!-- ── Floating toolbar ─────────────────────────────────────────────── -->
-    <LinearLayout
+    <!-- ── Banner header (replaces floating dark toolbar) ──────────────────── -->
+    <FrameLayout
         android:id="@+id/toolbar_container"
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:background="#CC0A0A0A"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp">
+        android:layout_height="72dp"
+        android:layout_gravity="top"
+        android:background="?attr/colorPrimaryContainer"
+        android:clipChildren="true"
+        android:clipToPadding="true">
 
-        <!-- Pill-shaped app title badge -->
+        <!-- Large solid circle — top right -->
+        <View
+            android:layout_width="110dp"
+            android:layout_height="110dp"
+            android:layout_gravity="top|end"
+            android:layout_marginTop="-38dp"
+            android:layout_marginEnd="-28dp"
+            android:background="@drawable/bg_about_deco_circle"
+            android:alpha="0.12" />
+
+        <!-- Medium solid circle — bottom left -->
+        <View
+            android:layout_width="58dp"
+            android:layout_height="58dp"
+            android:layout_gravity="bottom|start"
+            android:layout_marginBottom="-22dp"
+            android:layout_marginStart="-14dp"
+            android:background="@drawable/bg_about_deco_circle"
+            android:alpha="0.09" />
+
+        <!-- Ring circle — center area -->
+        <View
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_gravity="center_vertical|start"
+            android:layout_marginStart="130dp"
+            android:background="@drawable/bg_about_deco_ring"
+            android:alpha="0.11" />
+
+        <!-- Tiny dot — mid-right -->
+        <View
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:layout_gravity="center_vertical|end"
+            android:layout_marginEnd="72dp"
+            android:background="@drawable/bg_about_deco_circle"
+            android:alpha="0.13" />
+
+        <!-- Content row -->
         <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="38dp"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
             android:orientation="horizontal"
-            android:gravity="center"
-            android:paddingStart="14dp"
-            android:paddingEnd="14dp"
-            android:background="@drawable/bg_toolbar_pill">
+            android:gravity="center_vertical"
+            android:paddingStart="20dp"
+            android:paddingEnd="12dp">
 
             <TextView
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:text="✦  Ever Wall"
-                android:textColor="#F0FFFFFF"
-                android:textSize="15sp"
+                android:textColor="?attr/colorOnPrimaryContainer"
+                android:textSize="18sp"
                 android:fontFamily="sans-serif-medium"
                 android:letterSpacing="0.02" />
+
+            <FrameLayout
+                android:id="@+id/btn_settings"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/bg_icon_circle_primary"
+                android:backgroundTint="?attr/colorPrimary"
+                android:clickable="true"
+                android:focusable="true"
+                android:foreground="?attr/selectableItemBackgroundBorderless">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_settings"
+                    android:tint="?attr/colorOnPrimary"
+                    android:contentDescription="Settings" />
+
+            </FrameLayout>
+
         </LinearLayout>
 
-        <!-- Spacer -->
-        <View
-            android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_weight="1" />
-
-        <!-- Settings icon button -->
-        <FrameLayout
-            android:id="@+id/btn_settings"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="@drawable/bg_toolbar_pill"
-            android:clickable="true"
-            android:focusable="true"
-            android:foreground="?attr/selectableItemBackgroundBorderless">
-
-            <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:layout_gravity="center"
-                android:src="@drawable/ic_settings"
-                android:tint="#F0FFFFFF"
-                android:contentDescription="Settings" />
-
-        </FrameLayout>
-
-    </LinearLayout>
+    </FrameLayout>
 
     <!-- Hidden toolbar for system back-nav support -->
     <com.google.android.material.appbar.MaterialToolbar

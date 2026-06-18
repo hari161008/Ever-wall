@@ -37,7 +37,7 @@ class DepthWallpaperService : WallpaperService() {
 
         // Grace period after screen-on before we trust KeyguardManager.
         // Prevents the brief clock flash while the lock screen is still drawing.
-        private val SCREEN_ON_GRACE_MS = 600L
+        private val SCREEN_ON_GRACE_MS = 900L
 
         private val f12   = SimpleDateFormat("h:mm",       Locale.getDefault())
         private val f12s  = SimpleDateFormat("h:mm:ss",    Locale.getDefault())
@@ -129,16 +129,14 @@ class DepthWallpaperService : WallpaperService() {
             tPaint.typeface = tf ?: Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             dPaint.typeface = tf ?: Typeface.create("sans-serif-light", Typeface.NORMAL)
 
-            // Initialise hide-state from KeyguardManager (covers cold-start while locked)
+            // Always start hidden; grace-period + draw() tick decides via
+            // KeyguardManager once it has settled — eliminates the brief flash.
             if (WallpaperPrefs.getAutoHide(this@DepthWallpaperService)) {
-                val km     = getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
-                val locked = km?.isKeyguardLocked == true
                 isScreenOff    = false
-                clockHidden    = locked
-                clockFadeAlpha = if (locked) 0f else 1f
-                // Treat a cold-start-while-locked the same as a fresh screen-on so the
-                // grace period fires and we don't reveal the clock too early.
-                if (locked) screenOnTimeMs = SystemClock.elapsedRealtime()
+                clockHidden    = true
+                clockFadeAlpha = 0f
+                handler.removeCallbacks(fadeInTick)
+                screenOnTimeMs = SystemClock.elapsedRealtime()
             } else {
                 clockHidden    = false
                 clockFadeAlpha = 1f

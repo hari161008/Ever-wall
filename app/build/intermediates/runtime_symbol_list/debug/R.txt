@@ -3033,6 +3033,7 @@ int drawable avd_hide_password 0x7f070077
 int drawable avd_show_password 0x7f070078
 int drawable bg_about_banner 0x7f070079
 int drawable bg_about_deco_circle 0x7f07007a
+int drawable bg_about_deco_ring 0x7f070105
 int drawable bg_card_selected 0x7f07007b
 int drawable bg_color_swatch 0x7f07007c
 int drawable bg_day_night_holder 0x7f07007d
