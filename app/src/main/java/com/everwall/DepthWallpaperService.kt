@@ -88,6 +88,21 @@ class DepthWallpaperService : WallpaperService() {
         }
 
         private var lastSlot = -1
+        private var lastNightMode = -1
+
+        private val configReceiver = object : BroadcastReceiver() {
+            override fun onReceive(ctx: Context, intent: Intent) {
+                if (intent.action != Intent.ACTION_CONFIGURATION_CHANGED) return
+                if (WallpaperPrefs.getWallpaperMode(this@DepthWallpaperService) != WallpaperPrefs.MODE_SYSTEM_THEME) return
+                val nightBit = resources.configuration.uiMode and
+                    android.content.res.Configuration.UI_MODE_NIGHT_MASK
+                if (nightBit != lastNightMode) {
+                    lastNightMode = nightBit
+                    load()
+                    if (visible) drawFrame()
+                }
+            }
+        }
 
         override fun onCreate(h: SurfaceHolder) {
             super.onCreate(h)
@@ -99,10 +114,16 @@ class DepthWallpaperService : WallpaperService() {
             ContextCompat.registerReceiver(
                 this@DepthWallpaperService, screenReceiver, filter,
                 ContextCompat.RECEIVER_NOT_EXPORTED)
+            ContextCompat.registerReceiver(
+                this@DepthWallpaperService, configReceiver,
+                IntentFilter(Intent.ACTION_CONFIGURATION_CHANGED),
+                ContextCompat.RECEIVER_NOT_EXPORTED)
             load()
         }
 
         private fun load() {
+            lastNightMode = resources.configuration.uiMode and
+                android.content.res.Configuration.UI_MODE_NIGHT_MASK
             val ftF = File(filesDir, WallpaperPrefs.FILE_FONT)
             tf    = if (ftF.exists()) try { Typeface.createFromFile(ftF) } catch (_: Exception) { null } else null
             tPaint.typeface = tf ?: Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
@@ -165,6 +186,7 @@ class DepthWallpaperService : WallpaperService() {
         override fun onDestroy() {
             handler.removeCallbacks(tick); handler.removeCallbacks(fadeInTick)
             try { unregisterReceiver(screenReceiver) } catch (_: Exception) {}
+            try { unregisterReceiver(configReceiver) } catch (_: Exception) {}
             rawBg?.recycle(); rawFg?.recycle(); cachedBg?.recycle()
             super.onDestroy()
         }
@@ -266,7 +288,7 @@ class DepthWallpaperService : WallpaperService() {
             }
 
             val alpha = if (autoHide) clockFadeAlpha else 1f
-            if (alpha > 0f) {
+            if (alpha > 0f && !isPreview()) {
                 tPaint.color    = dimmedColor(color, p.clkDim, alpha)
                 tPaint.textSize = p.clockSz * H
                 tPaint.typeface = tf ?: Typeface.create(Typeface.DEFAULT, Typeface.BOLD)

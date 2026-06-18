@@ -7,13 +7,36 @@
     android:orientation="vertical"
     android:background="?attr/colorSurface">
 
-    <!-- Dynamic color banner -->
+    <!-- Shape-based banner: colorPrimaryContainer + decorative circles -->
     <FrameLayout
         android:id="@+id/welcomeBannerFrame"
         android:layout_width="match_parent"
-        android:layout_height="130dp">
+        android:layout_height="130dp"
+        android:background="?attr/colorPrimaryContainer"
+        android:clipChildren="true"
+        android:clipToPadding="true">
 
-        <!-- Star sparkle -->
+        <!-- Deco circle — top left -->
+        <View
+            android:layout_width="110dp"
+            android:layout_height="110dp"
+            android:layout_gravity="top|start"
+            android:layout_marginTop="-40dp"
+            android:layout_marginStart="-30dp"
+            android:background="@drawable/bg_about_deco_circle"
+            android:alpha="0.12" />
+
+        <!-- Deco circle — bottom right -->
+        <View
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_gravity="bottom|end"
+            android:layout_marginBottom="-30dp"
+            android:layout_marginEnd="-20dp"
+            android:background="@drawable/bg_about_deco_circle"
+            android:alpha="0.10" />
+
+        <!-- Content -->
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -26,7 +49,7 @@
                 android:layout_height="wrap_content"
                 android:text="✦"
                 android:textSize="30sp"
-                android:textColor="#FFFFFFFF"
+                android:textColor="?attr/colorOnPrimaryContainer"
                 android:layout_marginBottom="6dp" />
 
             <TextView
@@ -34,7 +57,7 @@
                 android:layout_height="wrap_content"
                 android:text="Welcome to Ever Wall"
                 android:textSize="20sp"
-                android:textColor="#FFFFFFFF"
+                android:textColor="?attr/colorOnPrimaryContainer"
                 android:fontFamily="sans-serif-medium"
                 android:letterSpacing="0.01" />
 
@@ -43,7 +66,8 @@
                 android:layout_height="wrap_content"
                 android:text="Live Wallpaper Studio"
                 android:textSize="12sp"
-                android:textColor="#CCFFFFFF"
+                android:textColor="?attr/colorOnPrimaryContainer"
+                android:alpha="0.65"
                 android:layout_marginTop="3dp"
                 android:letterSpacing="0.04" />
 
@@ -84,9 +108,10 @@
                 <ImageView
                     android:layout_width="28dp"
                     android:layout_height="28dp"
-                    android:src="@drawable/ic_telegram"
+                    android:src="@drawable/ic_people"
                     android:tint="?attr/colorOnSecondaryContainer"
-                    android:layout_marginBottom="10dp" />
+                    android:layout_marginBottom="10dp"
+                    android:contentDescription="Community" />
 
                 <TextView
                     android:layout_width="match_parent"
@@ -127,7 +152,6 @@
             android:orientation="horizontal"
             android:gravity="center_vertical">
 
-            <!-- Continue (left, outlined) -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_welcome_continue"
                 style="@style/Widget.Material3.Button.OutlinedButton"
@@ -140,7 +164,6 @@
                 app:strokeWidth="1dp"
                 app:strokeColor="?attr/colorOutline" />
 
-            <!-- Join (right, filled pill with Telegram icon) -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_welcome_join"
                 style="@style/Widget.Material3.Button"
@@ -151,9 +174,9 @@
                 android:text="Join"
                 android:textSize="14sp"
                 app:cornerRadius="24dp"
-                app:icon="@drawable/ic_telegram"
+                app:icon="@drawable/ic_arrow_forward"
                 app:iconSize="17dp"
-                app:iconGravity="textStart"
+                app:iconGravity="textEnd"
                 app:iconPadding="6dp" />
 
         </LinearLayout>

@@ -132,9 +132,18 @@ class EditorActivity : AppCompatActivity() {
         b.btnMode.setOnClickListener {
             MaterialAlertDialogBuilder(this)
                 .setTitle("Wallpaper Mode")
-                .setSingleChoiceItems(arrayOf("None", "Day and Night"),
-                    if (wallpaperMode == WallpaperPrefs.MODE_NONE) 0 else 1) { dialog, which ->
-                    val newMode = if (which == 0) WallpaperPrefs.MODE_NONE else WallpaperPrefs.MODE_DAY_NIGHT
+                .setSingleChoiceItems(
+                    arrayOf("None", "Day and Night", "System Theme"),
+                    when (wallpaperMode) {
+                        WallpaperPrefs.MODE_DAY_NIGHT    -> 1
+                        WallpaperPrefs.MODE_SYSTEM_THEME -> 2
+                        else -> 0
+                    }) { dialog, which ->
+                    val newMode = when (which) {
+                        1    -> WallpaperPrefs.MODE_DAY_NIGHT
+                        2    -> WallpaperPrefs.MODE_SYSTEM_THEME
+                        else -> WallpaperPrefs.MODE_NONE
+                    }
                     if (newMode != wallpaperMode) {
                         saveCurrentSlot()
                         applyWallpaperMode(newMode)
@@ -162,9 +171,10 @@ class EditorActivity : AppCompatActivity() {
         b.btnSetDayTime.setOnClickListener   { showTimePicker(isDay = true) }
         b.btnSetNightTime.setOnClickListener { showTimePicker(isDay = false) }
 
-        // Restore mode UI if already in Day/Night mode
-        if (wallpaperMode == WallpaperPrefs.MODE_DAY_NIGHT) {
+        // Restore mode UI if already in Day/Night or System Theme mode
+        if (wallpaperMode == WallpaperPrefs.MODE_DAY_NIGHT || wallpaperMode == WallpaperPrefs.MODE_SYSTEM_THEME) {
             showDayNightUI(true)
+            b.setTimeContainer.visibility = if (wallpaperMode == WallpaperPrefs.MODE_SYSTEM_THEME) View.GONE else View.VISIBLE
             pillDayNight(editSlot)
         }
         updateDayNightTimeLabels()
@@ -174,15 +184,19 @@ class EditorActivity : AppCompatActivity() {
     private fun applyWallpaperMode(mode: Int) {
         wallpaperMode = mode
         WallpaperPrefs.setWallpaperMode(this, mode)
-        if (mode == WallpaperPrefs.MODE_DAY_NIGHT) {
-            editSlot = WallpaperPrefs.EDIT_DAY
-            showDayNightUI(true)
-            loadSlotIntoEditor(WallpaperPrefs.EDIT_DAY)
-            pillDayNight(WallpaperPrefs.EDIT_DAY)
-        } else {
-            editSlot = WallpaperPrefs.EDIT_NONE
-            showDayNightUI(false)
-            loadSlotIntoEditor(WallpaperPrefs.EDIT_NONE)
+        when (mode) {
+            WallpaperPrefs.MODE_DAY_NIGHT, WallpaperPrefs.MODE_SYSTEM_THEME -> {
+                editSlot = WallpaperPrefs.EDIT_DAY
+                showDayNightUI(true)
+                b.setTimeContainer.visibility = if (mode == WallpaperPrefs.MODE_SYSTEM_THEME) View.GONE else View.VISIBLE
+                loadSlotIntoEditor(WallpaperPrefs.EDIT_DAY)
+                pillDayNight(WallpaperPrefs.EDIT_DAY)
+            }
+            else -> {
+                editSlot = WallpaperPrefs.EDIT_NONE
+                showDayNightUI(false)
+                loadSlotIntoEditor(WallpaperPrefs.EDIT_NONE)
+            }
         }
         b.btnMode.text = modeLabel()
         updateSetLiveButton()
@@ -200,7 +214,11 @@ class EditorActivity : AppCompatActivity() {
         b.btnNight.backgroundTintList = android.content.res.ColorStateList.valueOf(if (!dayActive) activeTint else inactTint)
     }
 
-    private fun modeLabel() = if (wallpaperMode == WallpaperPrefs.MODE_NONE) "Mode: None" else "Mode: Day & Night"
+    private fun modeLabel() = when (wallpaperMode) {
+        WallpaperPrefs.MODE_DAY_NIGHT    -> "Mode: Day & Night"
+        WallpaperPrefs.MODE_SYSTEM_THEME -> "Mode: System Theme"
+        else                             -> "Mode: None"
+    }
 
     private fun showTimePicker(isDay: Boolean) {
         val savedMins = if (isDay) WallpaperPrefs.getDayMins(this) else WallpaperPrefs.getNightMins(this)
@@ -442,8 +460,8 @@ class EditorActivity : AppCompatActivity() {
     // ── Load ──────────────────────────────────────────────────────────────────
     private fun loadData() {
         wallpaperMode = WallpaperPrefs.getWallpaperMode(this)
-        editSlot = if (wallpaperMode == WallpaperPrefs.MODE_DAY_NIGHT) WallpaperPrefs.EDIT_DAY
-                   else WallpaperPrefs.EDIT_NONE
+        editSlot = if (wallpaperMode == WallpaperPrefs.MODE_DAY_NIGHT || wallpaperMode == WallpaperPrefs.MODE_SYSTEM_THEME)
+            WallpaperPrefs.EDIT_DAY else WallpaperPrefs.EDIT_NONE
 
         val p   = WallpaperPrefs.loadSlot(this, editSlot)
         val bgF = WallpaperPrefs.getBgFileForSlot(this, editSlot)
@@ -650,28 +668,6 @@ class EditorActivity : AppCompatActivity() {
         val dialog = BottomSheetDialog(this)
         val db = DialogAboutBinding.inflate(layoutInflater)
 
-        // Tint the banner with dynamic primary color
-        val bannerGd = android.graphics.drawable.GradientDrawable(
-            android.graphics.drawable.GradientDrawable.Orientation.TL_BR,
-            intArrayOf(
-                attr(com.google.android.material.R.attr.colorPrimary),
-                attr(com.google.android.material.R.attr.colorTertiary)
-            )
-        )
-        db.aboutBannerFrame.background = bannerGd
-
-        // Tint icon circles with dynamic colors
-        val primaryCircleGd = android.graphics.drawable.GradientDrawable().apply {
-            shape = android.graphics.drawable.GradientDrawable.OVAL
-            setColor(attr(com.google.android.material.R.attr.colorPrimary))
-        }
-        val secondaryCircleGd = android.graphics.drawable.GradientDrawable().apply {
-            shape = android.graphics.drawable.GradientDrawable.OVAL
-            setColor(attr(com.google.android.material.R.attr.colorSecondary))
-        }
-        db.root.findViewWithTag<android.widget.FrameLayout>("icon_circle_primary")?.background = primaryCircleGd
-        db.root.findViewWithTag<android.widget.FrameLayout>("icon_circle_secondary")?.background = secondaryCircleGd
-
         try {
             val pInfo = packageManager.getPackageInfo(packageName, 0)
             db.tvVersion.text = "Version ${pInfo.versionName}"
@@ -696,15 +692,6 @@ class EditorActivity : AppCompatActivity() {
         val dialog = BottomSheetDialog(this)
         dialog.setCancelable(false)
         val wb = DialogWelcomeBinding.inflate(layoutInflater)
-
-        // Tint banner with system dynamic colors (colorPrimary → colorTertiary gradient)
-        val primary   = attr(com.google.android.material.R.attr.colorPrimary)
-        val tertiary  = attr(com.google.android.material.R.attr.colorTertiary)
-        val bannerGd = android.graphics.drawable.GradientDrawable(
-            android.graphics.drawable.GradientDrawable.Orientation.TL_BR,
-            intArrayOf(primary, tertiary)
-        )
-        wb.welcomeBannerFrame.background = bannerGd
 
         wb.btnWelcomeContinue.setOnClickListener { dialog.dismiss() }
         wb.btnWelcomeJoin.setOnClickListener {

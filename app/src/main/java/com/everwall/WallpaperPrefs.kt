@@ -95,8 +95,9 @@ object WallpaperPrefs {
     fun setAutoHide(ctx: Context, v: Boolean) = prefs(ctx).edit().putBoolean(KEY_AUTO_HIDE, v).apply()
 
     // ── Mode / Day-Night slot system ──────────────────────────────────────────
-    const val MODE_NONE      = 0
-    const val MODE_DAY_NIGHT = 1
+    const val MODE_NONE         = 0
+    const val MODE_DAY_NIGHT    = 1
+    const val MODE_SYSTEM_THEME = 2
     const val EDIT_NONE      = 0
     const val EDIT_DAY       = 1
     const val EDIT_NIGHT     = 2
@@ -125,13 +126,22 @@ object WallpaperPrefs {
         when(slot) { EDIT_DAY -> "ew_fg_day.png"; EDIT_NIGHT -> "ew_fg_night.png"; else -> FILE_FOREGROUND })
 
     fun activeSlot(ctx: Context): Int {
-        if (getWallpaperMode(ctx) != MODE_DAY_NIGHT) return EDIT_NONE
-        val d = getDayMins(ctx); val n = getNightMins(ctx)
-        if (d < 0 || n < 0) return EDIT_NONE
-        val cal = java.util.Calendar.getInstance()
-        val now = cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 + cal.get(java.util.Calendar.MINUTE)
-        val isDay = if (d <= n) now in d until n else now >= d || now < n
-        return if (isDay) EDIT_DAY else EDIT_NIGHT
+        return when (getWallpaperMode(ctx)) {
+            MODE_DAY_NIGHT -> {
+                val d = getDayMins(ctx); val n = getNightMins(ctx)
+                if (d < 0 || n < 0) return EDIT_NONE
+                val cal = java.util.Calendar.getInstance()
+                val now = cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 + cal.get(java.util.Calendar.MINUTE)
+                val isDay = if (d <= n) now in d until n else now >= d || now < n
+                if (isDay) EDIT_DAY else EDIT_NIGHT
+            }
+            MODE_SYSTEM_THEME -> {
+                val nightBit = ctx.resources.configuration.uiMode and
+                    android.content.res.Configuration.UI_MODE_NIGHT_MASK
+                if (nightBit == android.content.res.Configuration.UI_MODE_NIGHT_YES) EDIT_NIGHT else EDIT_DAY
+            }
+            else -> EDIT_NONE
+        }
     }
 
     data class WallPrefs(
