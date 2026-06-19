@@ -94,6 +94,15 @@ object WallpaperPrefs {
     fun getAutoHide(ctx: Context)  = prefs(ctx).getBoolean(KEY_AUTO_HIDE, false)
     fun setAutoHide(ctx: Context, v: Boolean) = prefs(ctx).edit().putBoolean(KEY_AUTO_HIDE, v).apply()
 
+    fun getBgBehindPreview(ctx: Context)         = metaPrefs(ctx).getBoolean("bg_behind_preview", false)
+    fun setBgBehindPreview(ctx: Context, v: Boolean) = metaPrefs(ctx).edit().putBoolean("bg_behind_preview", v).apply()
+
+    const val THEME_AUTO  = 0
+    const val THEME_LIGHT = 1
+    const val THEME_DARK  = 2
+    fun getAppTheme(ctx: Context)         = metaPrefs(ctx).getInt("app_theme", THEME_AUTO)
+    fun setAppTheme(ctx: Context, v: Int) = metaPrefs(ctx).edit().putInt("app_theme", v).apply()
+
     // ── Mode / Day-Night slot system ──────────────────────────────────────────
     const val MODE_NONE         = 0
     const val MODE_DAY_NIGHT    = 1

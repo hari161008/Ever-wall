@@ -23,10 +23,12 @@ import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.color.DynamicColors
@@ -54,8 +56,8 @@ class EditorActivity : AppCompatActivity() {
     private var wallpaperMode = WallpaperPrefs.MODE_NONE
     private var editSlot      = WallpaperPrefs.EDIT_NONE
 
-    private val pickBg   = registerForActivityResult(ActivityResultContracts.GetContent()) { it?.let { u -> replaceImg(u, true) } }
-    private val pickFg   = registerForActivityResult(ActivityResultContracts.GetContent()) { it?.let { u -> replaceImg(u, false) } }
+    private val pickBg   = registerForActivityResult(ActivityResultContracts.OpenDocument()) { it?.let { u -> replaceImg(u, true) } }
+    private val pickFg   = registerForActivityResult(ActivityResultContracts.OpenDocument()) { it?.let { u -> replaceImg(u, false) } }
     private val pickFont = registerForActivityResult(ActivityResultContracts.GetContent()) { it?.let { u -> onFont(u) } }
     private val perm     = registerForActivityResult(ActivityResultContracts.RequestPermission()) { if (!it) toast("Storage permission required.") }
 
@@ -65,31 +67,34 @@ class EditorActivity : AppCompatActivity() {
     }
 
     override fun onCreate(s: Bundle?) {
+        applyThemeMode()
         DynamicColors.applyToActivityIfAvailable(this)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         super.onCreate(s)
         b = ActivityEditorBinding.inflate(layoutInflater)
         setContentView(b.root)
 
-        // Apply edge-to-edge insets: banner absorbs status bar, sheet absorbs nav bar
         ViewCompat.setOnApplyWindowInsetsListener(b.root) { _, insets ->
-            val bars  = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            val dp    = resources.displayMetrics.density
-            val base  = (72 * dp).toInt()
+            val bars    = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val dp      = resources.displayMetrics.density
+            val base    = (72 * dp).toInt()
             val bannerH = base + bars.top
-            // Banner padding so content sits below status bar
             b.toolbarContainer.setPadding(0, bars.top, 0, 0)
             val lp = b.toolbarContainer.layoutParams
             lp.height = bannerH
             b.toolbarContainer.layoutParams = lp
-            // Preview starts right below the banner
             val plp = b.previewContainer.layoutParams as androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams
             plp.topMargin = bannerH
             b.previewContainer.layoutParams = plp
-            // Bottom sheet respects nav bar
             b.controlsRoot.setPadding(
                 b.controlsRoot.paddingLeft, b.controlsRoot.paddingTop,
                 b.controlsRoot.paddingRight, bars.bottom)
+            // Fix status bar icons for current theme
+            val isNight = (resources.configuration.uiMode and
+                android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+                android.content.res.Configuration.UI_MODE_NIGHT_YES
+            WindowInsetsControllerCompat(window, window.decorView)
+                .isAppearanceLightStatusBars = !isNight
             WindowInsetsCompat.CONSUMED
         }
 
@@ -505,6 +510,7 @@ class EditorActivity : AppCompatActivity() {
             this.clockColor = this@EditorActivity.clockColor
             setData(bgBmp, fgBmp, tf)
         }
+        applyPreviewBg()
     }
 
     // ── Pills ─────────────────────────────────────────────────────────────────
@@ -626,7 +632,7 @@ class EditorActivity : AppCompatActivity() {
         else perm.launch(p)
     }
 
-    private fun launch(bg: Boolean) { if (bg) pickBg.launch("image/*") else pickFg.launch("image/*") }
+    private fun launch(bg: Boolean) { if (bg) pickBg.launch(arrayOf("image/*")) else pickFg.launch(arrayOf("image/*")) }
 
     private fun replaceImg(uri: Uri, isBg: Boolean) {
         val targetFile = if (isBg) WallpaperPrefs.getBgFileForSlot(this, editSlot)
@@ -697,15 +703,105 @@ class EditorActivity : AppCompatActivity() {
             db.tvVersion.text = "Version ${pInfo.versionName}"
         } catch (_: Exception) {}
 
-        db.cardSupportGroup.setOnClickListener {
-            openUrl("https://t.me/EverlastingAndroidTweak")
+        // Theme selector
+        db.toggleTheme.check(when (WallpaperPrefs.getAppTheme(this)) {
+            WallpaperPrefs.THEME_LIGHT -> R.id.btn_theme_light
+            WallpaperPrefs.THEME_DARK  -> R.id.btn_theme_dark
+            else                       -> R.id.btn_theme_auto
+        })
+        db.toggleTheme.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (isChecked) {
+                val theme = when (checkedId) {
+                    R.id.btn_theme_light -> WallpaperPrefs.THEME_LIGHT
+                    R.id.btn_theme_dark  -> WallpaperPrefs.THEME_DARK
+                    else                 -> WallpaperPrefs.THEME_AUTO
+                }
+                WallpaperPrefs.setAppTheme(this, theme)
+                applyThemeMode()
+            }
         }
-        db.cardAppChannel.setOnClickListener {
-            openUrl("https://t.me/CoolAppStore")
+
+        db.swBgBehindPreview.isChecked = WallpaperPrefs.getBgBehindPreview(this)
+        db.swBgBehindPreview.setOnCheckedChangeListener { _, v ->
+            WallpaperPrefs.setBgBehindPreview(this, v)
+            applyPreviewBg()
         }
+
+        db.cardSupportGroup.setOnClickListener { openUrl("https://t.me/EverlastingAndroidTweak") }
+        db.cardAppChannel.setOnClickListener   { openUrl("https://t.me/CoolAppStore") }
 
         dialog.setContentView(db.root)
         dialog.show()
+    }
+
+    private fun applyThemeMode() {
+        AppCompatDelegate.setDefaultNightMode(when (WallpaperPrefs.getAppTheme(this)) {
+            WallpaperPrefs.THEME_LIGHT -> AppCompatDelegate.MODE_NIGHT_NO
+            WallpaperPrefs.THEME_DARK  -> AppCompatDelegate.MODE_NIGHT_YES
+            else                       -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+        })
+    }
+
+    private fun applyPreviewBg() {
+        val enabled = WallpaperPrefs.getBgBehindPreview(this)
+        val isNight = (resources.configuration.uiMode and
+            android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+            android.content.res.Configuration.UI_MODE_NIGHT_YES
+        val controller = WindowInsetsControllerCompat(window, window.decorView)
+
+        if (enabled) {
+            val bgColor   = attr(com.google.android.material.R.attr.colorPrimaryContainer)
+            val onBgColor = attr(com.google.android.material.R.attr.colorOnPrimaryContainer)
+            val primary   = attr(com.google.android.material.R.attr.colorPrimary)
+            val onPrimary = attr(com.google.android.material.R.attr.colorOnPrimary)
+
+            // Root bg fills any gap between toolbar and preview — creates seamless join
+            b.root.setBackgroundColor(bgColor)
+            b.previewContainer.setBackgroundColor(bgColor)
+            b.previewBgFrame.setBackgroundColor(bgColor)
+            b.previewBgFrame.visibility = android.view.View.VISIBLE
+
+            // Toolbar matches — no visible boundary
+            b.toolbarContainer.setBackgroundColor(bgColor)
+            b.tvAppTitle.setTextColor(onBgColor)
+            b.btnSettings.backgroundTintList = android.content.res.ColorStateList.valueOf(primary)
+            b.ivSettingsIcon.imageTintList   = android.content.res.ColorStateList.valueOf(onPrimary)
+            controller.isAppearanceLightStatusBars = !isNight
+
+            for (i in 0 until b.toolbarContainer.childCount) {
+                val child = b.toolbarContainer.getChildAt(i)
+                if ("toolbar_deco" == child.tag)
+                    child.backgroundTintList = android.content.res.ColorStateList.valueOf(onBgColor)
+            }
+
+            // Sun / moon
+            b.ivSun.visibility  = if (!isNight) android.view.View.VISIBLE else android.view.View.GONE
+            b.ivMoon.visibility = if (isNight)  android.view.View.VISIBLE else android.view.View.GONE
+        } else {
+            val dark           = android.graphics.Color.parseColor("#0A0A0A")
+            val primaryCont    = attr(com.google.android.material.R.attr.colorPrimaryContainer)
+            val onPrimaryCont  = attr(com.google.android.material.R.attr.colorOnPrimaryContainer)
+            val primary        = attr(com.google.android.material.R.attr.colorPrimary)
+            val onPrimary      = attr(com.google.android.material.R.attr.colorOnPrimary)
+
+            b.root.setBackgroundColor(dark)
+            b.previewContainer.setBackgroundColor(dark)
+            b.previewBgFrame.visibility = android.view.View.GONE
+            b.ivSun.visibility  = android.view.View.GONE
+            b.ivMoon.visibility = android.view.View.GONE
+
+            b.toolbarContainer.setBackgroundColor(primaryCont)
+            b.tvAppTitle.setTextColor(onPrimaryCont)
+            b.btnSettings.backgroundTintList = android.content.res.ColorStateList.valueOf(primary)
+            b.ivSettingsIcon.imageTintList   = android.content.res.ColorStateList.valueOf(onPrimary)
+            controller.isAppearanceLightStatusBars = !isNight
+
+            for (i in 0 until b.toolbarContainer.childCount) {
+                val child = b.toolbarContainer.getChildAt(i)
+                if ("toolbar_deco" == child.tag)
+                    child.backgroundTintList = android.content.res.ColorStateList.valueOf(onPrimaryCont)
+            }
+        }
     }
 
     private fun showWelcomeIfFirstLaunch() {
