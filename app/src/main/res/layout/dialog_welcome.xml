@@ -24,6 +24,7 @@
             android:layout_marginTop="-40dp"
             android:layout_marginStart="-30dp"
             android:background="@drawable/bg_about_deco_circle"
+            android:backgroundTint="?attr/colorOnPrimaryContainer"
             android:alpha="0.12" />
 
         <!-- Deco circle — bottom right -->
@@ -34,6 +35,7 @@
             android:layout_marginBottom="-30dp"
             android:layout_marginEnd="-20dp"
             android:background="@drawable/bg_about_deco_circle"
+            android:backgroundTint="?attr/colorOnPrimaryContainer"
             android:alpha="0.10" />
 
         <!-- Content -->

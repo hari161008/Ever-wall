@@ -24,6 +24,9 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.color.DynamicColors
@@ -63,9 +66,32 @@ class EditorActivity : AppCompatActivity() {
 
     override fun onCreate(s: Bundle?) {
         DynamicColors.applyToActivityIfAvailable(this)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         super.onCreate(s)
         b = ActivityEditorBinding.inflate(layoutInflater)
         setContentView(b.root)
+
+        // Apply edge-to-edge insets: banner absorbs status bar, sheet absorbs nav bar
+        ViewCompat.setOnApplyWindowInsetsListener(b.root) { _, insets ->
+            val bars  = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val dp    = resources.displayMetrics.density
+            val base  = (72 * dp).toInt()
+            val bannerH = base + bars.top
+            // Banner padding so content sits below status bar
+            b.toolbarContainer.setPadding(0, bars.top, 0, 0)
+            val lp = b.toolbarContainer.layoutParams
+            lp.height = bannerH
+            b.toolbarContainer.layoutParams = lp
+            // Preview starts right below the banner
+            val plp = b.previewContainer.layoutParams as androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams
+            plp.topMargin = bannerH
+            b.previewContainer.layoutParams = plp
+            // Bottom sheet respects nav bar
+            b.controlsRoot.setPadding(
+                b.controlsRoot.paddingLeft, b.controlsRoot.paddingTop,
+                b.controlsRoot.paddingRight, bars.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
 
         setupBottomSheet()
         applyExactSurfaceAspectRatio()
@@ -404,19 +430,17 @@ class EditorActivity : AppCompatActivity() {
             object : ViewTreeObserver.OnGlobalLayoutListener {
                 override fun onGlobalLayout() {
                     val contH = b.previewContainer.height
-                    val contW = b.previewArea.width   // full width; sidebar is overlay
+                    val contW = b.previewArea.width
                     if (contH <= 100 || contW <= 0) return
                     b.previewContainer.viewTreeObserver.removeOnGlobalLayoutListener(this)
-                    val dp       = resources.displayMetrics.density
-                    val peekH    = (PEEK_HEIGHT_DP * dp).toInt()
-                    val gapH     = (BOTTOM_GAP_DP  * dp).toInt()
-                    val toolbarH = b.toolbarContainer.height.takeIf { it > 0 }
-                        ?: TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 56f, resources.displayMetrics).toInt()
-                    val padH     = (14 * dp).toInt()
-                    // Reserve right space for the floating sidebar (~130dp)
-                    val sidebarReserve = (130 * dp).toInt()
+                    val dp   = resources.displayMetrics.density
+                    val peekH = (PEEK_HEIGHT_DP * dp).toInt()
+                    val gapH  = (BOTTOM_GAP_DP  * dp).toInt()
+                    val padH  = (14 * dp).toInt()
+                    // previewContainer already starts below the banner; just reserve sidebar
+                    val sidebarReserve = (88 * dp).toInt()
                     val avW = (contW - padH * 2 - sidebarReserve).coerceAtLeast(1)
-                    val avH = (contH - peekH - gapH - toolbarH - padH).coerceAtLeast((80 * dp).toInt())
+                    val avH = (contH - peekH - gapH - padH).coerceAtLeast((80 * dp).toInt())
                     val hFromW = (avW.toLong() * surfH / surfW).toInt()
                     val finalW: Int; val finalH: Int
                     if (hFromW <= avH) { finalW = avW; finalH = hFromW }
@@ -424,7 +448,7 @@ class EditorActivity : AppCompatActivity() {
                     val lp = b.previewCard.layoutParams as FrameLayout.LayoutParams
                     lp.width = finalW; lp.height = finalH
                     lp.gravity   = android.view.Gravity.CENTER_HORIZONTAL or android.view.Gravity.TOP
-                    lp.topMargin = toolbarH + padH
+                    lp.topMargin = padH
                     b.previewCard.layoutParams = lp
                 }
             })

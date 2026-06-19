@@ -11,7 +11,7 @@
         android:id="@+id/preview_container"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="72dp"
+        android:layout_marginTop="0dp"
         android:background="#0A0A0A">
 
         <!-- preview_area is full-width; card is sized+centered by applyExactSurfaceAspectRatio -->
@@ -61,15 +61,16 @@
                     android:id="@+id/btn_reset"
                     style="@style/Widget.Material3.Button.TonalButton"
                     android:layout_width="wrap_content"
-                    android:layout_height="34dp"
+                    android:layout_height="30dp"
                     android:insetTop="0dp"
                     android:insetBottom="0dp"
+                    android:layout_marginBottom="4dp"
                     android:text="Reset"
                     android:textSize="11sp"
                     android:paddingStart="10dp"
                     android:paddingEnd="12dp"
                     android:letterSpacing="0.01"
-                    app:cornerRadius="17dp"
+                    app:cornerRadius="15dp"
                     app:icon="@drawable/ic_reset"
                     app:iconSize="13dp"
                     app:iconGravity="textStart"
@@ -81,7 +82,7 @@
                     android:id="@+id/day_night_overlay"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="4dp"
                     android:orientation="vertical"
                     android:visibility="gone">
 
@@ -255,7 +256,8 @@
     <FrameLayout
         android:id="@+id/toolbar_container"
         android:layout_width="match_parent"
-        android:layout_height="72dp"
+        android:layout_height="wrap_content"
+        android:minHeight="72dp"
         android:layout_gravity="top"
         android:background="?attr/colorPrimaryContainer"
         android:clipChildren="true"
@@ -269,6 +271,7 @@
             android:layout_marginTop="-38dp"
             android:layout_marginEnd="-28dp"
             android:background="@drawable/bg_about_deco_circle"
+            android:backgroundTint="?attr/colorOnPrimaryContainer"
             android:alpha="0.12" />
 
         <!-- Medium solid circle — bottom left -->
@@ -279,6 +282,7 @@
             android:layout_marginBottom="-22dp"
             android:layout_marginStart="-14dp"
             android:background="@drawable/bg_about_deco_circle"
+            android:backgroundTint="?attr/colorOnPrimaryContainer"
             android:alpha="0.09" />
 
         <!-- Ring circle — center area -->
@@ -288,6 +292,7 @@
             android:layout_gravity="center_vertical|start"
             android:layout_marginStart="130dp"
             android:background="@drawable/bg_about_deco_ring"
+            android:backgroundTint="?attr/colorOnPrimaryContainer"
             android:alpha="0.11" />
 
         <!-- Tiny dot — mid-right -->
@@ -297,6 +302,7 @@
             android:layout_gravity="center_vertical|end"
             android:layout_marginEnd="72dp"
             android:background="@drawable/bg_about_deco_circle"
+            android:backgroundTint="?attr/colorOnPrimaryContainer"
             android:alpha="0.13" />
 
         <!-- Content row -->

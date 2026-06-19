@@ -23,6 +23,7 @@
             android:layout_marginTop="-55dp"
             android:layout_marginEnd="-45dp"
             android:background="@drawable/bg_about_deco_circle"
+            android:backgroundTint="?attr/colorOnPrimaryContainer"
             android:alpha="0.13" />
 
         <!-- Medium solid circle — bottom left, partially clipped -->
@@ -33,6 +34,7 @@
             android:layout_marginBottom="-32dp"
             android:layout_marginStart="-22dp"
             android:background="@drawable/bg_about_deco_circle"
+            android:backgroundTint="?attr/colorOnPrimaryContainer"
             android:alpha="0.09" />
 
         <!-- Small solid circle — top left area -->
@@ -43,6 +45,7 @@
             android:layout_marginTop="14dp"
             android:layout_marginStart="18dp"
             android:background="@drawable/bg_about_deco_circle"
+            android:backgroundTint="?attr/colorOnPrimaryContainer"
             android:alpha="0.11" />
 
         <!-- Ring circle — bottom right -->
@@ -53,6 +56,7 @@
             android:layout_marginBottom="-28dp"
             android:layout_marginEnd="30dp"
             android:background="@drawable/bg_about_deco_ring"
+            android:backgroundTint="?attr/colorOnPrimaryContainer"
             android:alpha="0.18" />
 
         <!-- Small ring — center left -->
@@ -62,6 +66,7 @@
             android:layout_gravity="center_vertical|start"
             android:layout_marginStart="90dp"
             android:background="@drawable/bg_about_deco_ring"
+            android:backgroundTint="?attr/colorOnPrimaryContainer"
             android:alpha="0.12" />
 
         <!-- Tiny solid dot — mid right area -->
@@ -71,6 +76,7 @@
             android:layout_gravity="center_vertical|end"
             android:layout_marginEnd="60dp"
             android:background="@drawable/bg_about_deco_circle"
+            android:backgroundTint="?attr/colorOnPrimaryContainer"
             android:alpha="0.14" />
 
         <!-- Content -->

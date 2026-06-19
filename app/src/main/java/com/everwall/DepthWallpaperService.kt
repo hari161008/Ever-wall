@@ -54,13 +54,19 @@ class DepthWallpaperService : WallpaperService() {
             override fun run() { drawFrame(); if (visible) handler.postDelayed(this, 1000L) }
         }
 
-        private val FADE_STEP_MS  = 16L
-        private val FADE_DURATION = 700f
+        private val FADE_STEP_MS    = 16L
+        private val FADE_DURATION_MS = 280f
+        private var fadeStartTimeMs  = 0L
         private val fadeInTick = object : Runnable {
             override fun run() {
-                clockFadeAlpha = (clockFadeAlpha + FADE_STEP_MS / FADE_DURATION).coerceAtMost(1f)
+                val t = ((android.os.SystemClock.elapsedRealtime() - fadeStartTimeMs) / FADE_DURATION_MS)
+                    .coerceIn(0f, 1f)
+                // Ease-out cubic: fast start, smooth stop
+                val inv = 1f - t
+                clockFadeAlpha = 1f - inv * inv * inv
                 drawFrame()
-                if (clockFadeAlpha < 1f) handler.postDelayed(this, FADE_STEP_MS)
+                if (t < 1f) handler.postDelayed(this, FADE_STEP_MS)
+                else { clockFadeAlpha = 1f; clockHidden = false }
             }
         }
 
@@ -277,6 +283,7 @@ class DepthWallpaperService : WallpaperService() {
                     }
                     !shouldHide && clockHidden -> {
                         clockHidden = false
+                        fadeStartTimeMs = android.os.SystemClock.elapsedRealtime()
                         handler.removeCallbacks(fadeInTick)
                         handler.post(fadeInTick)
                     }
