@@ -79,17 +79,26 @@ class EditorActivity : AppCompatActivity() {
             val dp      = resources.displayMetrics.density
             val base    = (72 * dp).toInt()
             val bannerH = base + bars.top
+            // Toolbar grows to absorb status bar — content padding pushes text below status bar
             b.toolbarContainer.setPadding(0, bars.top, 0, 0)
             val lp = b.toolbarContainer.layoutParams
             lp.height = bannerH
             b.toolbarContainer.layoutParams = lp
+            // previewContainer fills the ENTIRE screen (behind toolbar) — the merge
             val plp = b.previewContainer.layoutParams as androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams
-            plp.topMargin = bannerH
+            plp.topMargin = 0
             b.previewContainer.layoutParams = plp
+            // Sidebar starts below the toolbar so buttons are not hidden behind the banner
+            b.sidebarScroll.setPadding(
+                b.sidebarScroll.paddingLeft,
+                bannerH + (8 * dp).toInt(),
+                b.sidebarScroll.paddingRight,
+                (24 * dp).toInt())
+            // Bottom sheet absorbs nav bar
             b.controlsRoot.setPadding(
                 b.controlsRoot.paddingLeft, b.controlsRoot.paddingTop,
                 b.controlsRoot.paddingRight, bars.bottom)
-            // Fix status bar icons for current theme
+            // Status bar icon colour follows system theme
             val isNight = (resources.configuration.uiMode and
                 android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
                 android.content.res.Configuration.UI_MODE_NIGHT_YES
@@ -438,22 +447,24 @@ class EditorActivity : AppCompatActivity() {
                     val contW = b.previewArea.width
                     if (contH <= 100 || contW <= 0) return
                     b.previewContainer.viewTreeObserver.removeOnGlobalLayoutListener(this)
-                    val dp   = resources.displayMetrics.density
-                    val peekH = (PEEK_HEIGHT_DP * dp).toInt()
-                    val gapH  = (BOTTOM_GAP_DP  * dp).toInt()
-                    val padH  = (14 * dp).toInt()
-                    // previewContainer already starts below the banner; just reserve sidebar
-                    val sidebarReserve = (88 * dp).toInt()
-                    val avW = (contW - padH * 2 - sidebarReserve).coerceAtLeast(1)
-                    val avH = (contH - peekH - gapH - padH).coerceAtLeast((80 * dp).toInt())
+                    val dp          = resources.displayMetrics.density
+                    val peekH       = (PEEK_HEIGHT_DP * dp).toInt()
+                    val gapH        = (BOTTOM_GAP_DP  * dp).toInt()
+                    val padH        = (14 * dp).toInt()
+                    val sidebarR    = (88 * dp).toInt()
+                    val toolbarH    = b.toolbarContainer.height.takeIf { it > 0 }
+                                        ?: ((72 * dp).toInt())
+                    val avW = (contW - padH * 2 - sidebarR).coerceAtLeast(1)
+                    val avH = (contH - peekH - gapH - toolbarH - padH).coerceAtLeast((80 * dp).toInt())
                     val hFromW = (avW.toLong() * surfH / surfW).toInt()
                     val finalW: Int; val finalH: Int
                     if (hFromW <= avH) { finalW = avW; finalH = hFromW }
                     else               { finalH = avH; finalW = (avH.toLong() * surfW / surfH).toInt() }
                     val lp = b.previewCard.layoutParams as FrameLayout.LayoutParams
-                    lp.width = finalW; lp.height = finalH
+                    lp.width     = finalW
+                    lp.height    = finalH
                     lp.gravity   = android.view.Gravity.CENTER_HORIZONTAL or android.view.Gravity.TOP
-                    lp.topMargin = padH
+                    lp.topMargin = toolbarH + padH
                     b.previewCard.layoutParams = lp
                 }
             })
@@ -743,64 +754,40 @@ class EditorActivity : AppCompatActivity() {
     }
 
     private fun applyPreviewBg() {
-        val enabled = WallpaperPrefs.getBgBehindPreview(this)
-        val isNight = (resources.configuration.uiMode and
+        val enabled       = WallpaperPrefs.getBgBehindPreview(this)
+        val isNight       = (resources.configuration.uiMode and
             android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
             android.content.res.Configuration.UI_MODE_NIGHT_YES
-        val controller = WindowInsetsControllerCompat(window, window.decorView)
+        val controller    = WindowInsetsControllerCompat(window, window.decorView)
+        val primaryCont   = attr(com.google.android.material.R.attr.colorPrimaryContainer)
+        val onPrimaryCont = attr(com.google.android.material.R.attr.colorOnPrimaryContainer)
+        val primary       = attr(com.google.android.material.R.attr.colorPrimary)
+        val onPrimary     = attr(com.google.android.material.R.attr.colorOnPrimary)
+
+        // Toolbar always uses colorPrimaryContainer — root bg matches so status bar is seamless
+        b.toolbarContainer.setBackgroundColor(primaryCont)
+        b.tvAppTitle.setTextColor(onPrimaryCont)
+        b.btnSettings.backgroundTintList = android.content.res.ColorStateList.valueOf(primary)
+        b.ivSettingsIcon.imageTintList   = android.content.res.ColorStateList.valueOf(onPrimary)
+        controller.isAppearanceLightStatusBars = !isNight
+        for (i in 0 until b.toolbarContainer.childCount) {
+            val child = b.toolbarContainer.getChildAt(i)
+            if ("toolbar_deco" == child.tag)
+                child.backgroundTintList = android.content.res.ColorStateList.valueOf(onPrimaryCont)
+        }
 
         if (enabled) {
-            val bgColor   = attr(com.google.android.material.R.attr.colorPrimaryContainer)
-            val onBgColor = attr(com.google.android.material.R.attr.colorOnPrimaryContainer)
-            val primary   = attr(com.google.android.material.R.attr.colorPrimary)
-            val onPrimary = attr(com.google.android.material.R.attr.colorOnPrimary)
-
-            // Root bg fills any gap between toolbar and preview — creates seamless join
-            b.root.setBackgroundColor(bgColor)
-            b.previewContainer.setBackgroundColor(bgColor)
-            b.previewBgFrame.setBackgroundColor(bgColor)
+            // Preview bg matches root/toolbar — one seamless surface
+            b.previewContainer.setBackgroundColor(primaryCont)
+            b.previewBgFrame.setBackgroundColor(primaryCont)
             b.previewBgFrame.visibility = android.view.View.VISIBLE
-
-            // Toolbar matches — no visible boundary
-            b.toolbarContainer.setBackgroundColor(bgColor)
-            b.tvAppTitle.setTextColor(onBgColor)
-            b.btnSettings.backgroundTintList = android.content.res.ColorStateList.valueOf(primary)
-            b.ivSettingsIcon.imageTintList   = android.content.res.ColorStateList.valueOf(onPrimary)
-            controller.isAppearanceLightStatusBars = !isNight
-
-            for (i in 0 until b.toolbarContainer.childCount) {
-                val child = b.toolbarContainer.getChildAt(i)
-                if ("toolbar_deco" == child.tag)
-                    child.backgroundTintList = android.content.res.ColorStateList.valueOf(onBgColor)
-            }
-
-            // Sun / moon
             b.ivSun.visibility  = if (!isNight) android.view.View.VISIBLE else android.view.View.GONE
             b.ivMoon.visibility = if (isNight)  android.view.View.VISIBLE else android.view.View.GONE
         } else {
-            val dark           = android.graphics.Color.parseColor("#0A0A0A")
-            val primaryCont    = attr(com.google.android.material.R.attr.colorPrimaryContainer)
-            val onPrimaryCont  = attr(com.google.android.material.R.attr.colorOnPrimaryContainer)
-            val primary        = attr(com.google.android.material.R.attr.colorPrimary)
-            val onPrimary      = attr(com.google.android.material.R.attr.colorOnPrimary)
-
-            b.root.setBackgroundColor(dark)
-            b.previewContainer.setBackgroundColor(dark)
+            b.previewContainer.setBackgroundColor(android.graphics.Color.parseColor("#0A0A0A"))
             b.previewBgFrame.visibility = android.view.View.GONE
             b.ivSun.visibility  = android.view.View.GONE
             b.ivMoon.visibility = android.view.View.GONE
-
-            b.toolbarContainer.setBackgroundColor(primaryCont)
-            b.tvAppTitle.setTextColor(onPrimaryCont)
-            b.btnSettings.backgroundTintList = android.content.res.ColorStateList.valueOf(primary)
-            b.ivSettingsIcon.imageTintList   = android.content.res.ColorStateList.valueOf(onPrimary)
-            controller.isAppearanceLightStatusBars = !isNight
-
-            for (i in 0 until b.toolbarContainer.childCount) {
-                val child = b.toolbarContainer.getChildAt(i)
-                if ("toolbar_deco" == child.tag)
-                    child.backgroundTintList = android.content.res.ColorStateList.valueOf(onPrimaryCont)
-            }
         }
     }
 
