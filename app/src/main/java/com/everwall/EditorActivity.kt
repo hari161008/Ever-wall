@@ -45,6 +45,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 class EditorActivity : AppCompatActivity() {
 
     private lateinit var b: ActivityEditorBinding
+    private lateinit var bannerDrawable: BannerConcaveDrawable
     private enum class Panel { BACKGROUND, TIME, SUBJECT }
     private var panel = Panel.TIME
     private var clockColor = Color.WHITE
@@ -73,6 +74,31 @@ class EditorActivity : AppCompatActivity() {
         super.onCreate(s)
         b = ActivityEditorBinding.inflate(layoutInflater)
         setContentView(b.root)
+
+        val concaveR = 32f * resources.displayMetrics.density
+        bannerDrawable = BannerConcaveDrawable(
+            attr(com.google.android.material.R.attr.colorPrimaryContainer), concaveR)
+        b.toolbarContainer.background = bannerDrawable
+        b.toolbarContainer.clipToOutline = true
+        b.toolbarContainer.outlineProvider = object : android.view.ViewOutlineProvider() {
+            override fun getOutline(view: android.view.View, outline: android.graphics.Outline) {
+                val r = concaveR
+                val w = view.width.toFloat()
+                val h = view.height.toFloat()
+                val p = android.graphics.Path().apply {
+                    moveTo(0f, 0f)
+                    lineTo(w, 0f)
+                    lineTo(w, h - r)
+                    arcTo(android.graphics.RectF(w - r * 2f, h - r * 2f, w, h), 0f, 90f)
+                    lineTo(r, h)
+                    arcTo(android.graphics.RectF(0f, h - r * 2f, r * 2f, h), 90f, 90f)
+                    lineTo(0f, 0f)
+                    close()
+                }
+                @Suppress("DEPRECATION")
+                outline.setConvexPath(p)
+            }
+        }
 
         ViewCompat.setOnApplyWindowInsetsListener(b.root) { _, insets ->
             val bars    = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -247,11 +273,25 @@ class EditorActivity : AppCompatActivity() {
     }
 
     private fun pillDayNight(slot: Int) {
-        val dayActive  = slot == WallpaperPrefs.EDIT_DAY
-        val activeTint = attr(com.google.android.material.R.attr.colorPrimaryContainer)
-        val inactTint  = attr(com.google.android.material.R.attr.colorSurfaceContainerHigh)
-        b.btnDay.backgroundTintList   = android.content.res.ColorStateList.valueOf(if (dayActive) activeTint else inactTint)
-        b.btnNight.backgroundTintList = android.content.res.ColorStateList.valueOf(if (!dayActive) activeTint else inactTint)
+        val dayActive   = slot == WallpaperPrefs.EDIT_DAY
+        val bgEnabled   = WallpaperPrefs.getBgBehindPreview(this)
+        // When preview bg is on, colorPrimaryContainer == bg color → use colorPrimary instead so selected pill stands out
+        val activeTint  = if (bgEnabled) attr(com.google.android.material.R.attr.colorPrimary)
+                          else           attr(com.google.android.material.R.attr.colorPrimaryContainer)
+        val activeText  = if (bgEnabled) attr(com.google.android.material.R.attr.colorOnPrimary)
+                          else           attr(com.google.android.material.R.attr.colorOnPrimaryContainer)
+        val inactTint   = attr(com.google.android.material.R.attr.colorSurfaceContainerHigh)
+        val inactText   = attr(com.google.android.material.R.attr.colorOnSurface)
+
+        val (dayTint,  dayText)   = if (dayActive)  Pair(activeTint, activeText) else Pair(inactTint, inactText)
+        val (nightTint, nightText) = if (!dayActive) Pair(activeTint, activeText) else Pair(inactTint, inactText)
+
+        b.btnDay.backgroundTintList   = android.content.res.ColorStateList.valueOf(dayTint)
+        b.btnDay.setTextColor(dayText)
+        b.btnDay.iconTint             = android.content.res.ColorStateList.valueOf(dayText)
+        b.btnNight.backgroundTintList = android.content.res.ColorStateList.valueOf(nightTint)
+        b.btnNight.setTextColor(nightText)
+        b.btnNight.iconTint           = android.content.res.ColorStateList.valueOf(nightText)
     }
 
     private fun modeLabel() = when (wallpaperMode) {
@@ -736,6 +776,7 @@ class EditorActivity : AppCompatActivity() {
         db.swBgBehindPreview.setOnCheckedChangeListener { _, v ->
             WallpaperPrefs.setBgBehindPreview(this, v)
             applyPreviewBg()
+            if (wallpaperMode != WallpaperPrefs.MODE_NONE) pillDayNight(editSlot)
         }
 
         db.cardSupportGroup.setOnClickListener { openUrl("https://t.me/EverlastingAndroidTweak") }
@@ -764,8 +805,8 @@ class EditorActivity : AppCompatActivity() {
         val primary       = attr(com.google.android.material.R.attr.colorPrimary)
         val onPrimary     = attr(com.google.android.material.R.attr.colorOnPrimary)
 
-        // Toolbar always uses colorPrimaryContainer — root bg matches so status bar is seamless
-        b.toolbarContainer.setBackgroundColor(primaryCont)
+        // Toolbar: always colorPrimaryContainer with concave bottom corners
+        bannerDrawable.setFillColor(primaryCont)
         b.tvAppTitle.setTextColor(onPrimaryCont)
         b.btnSettings.backgroundTintList = android.content.res.ColorStateList.valueOf(primary)
         b.ivSettingsIcon.imageTintList   = android.content.res.ColorStateList.valueOf(onPrimary)
@@ -777,18 +818,41 @@ class EditorActivity : AppCompatActivity() {
         }
 
         if (enabled) {
-            // Preview bg matches root/toolbar — one seamless surface
+            // Preview matches toolbar — seamless join
             b.previewContainer.setBackgroundColor(primaryCont)
             b.previewBgFrame.setBackgroundColor(primaryCont)
             b.previewBgFrame.visibility = android.view.View.VISIBLE
             b.ivSun.visibility  = if (!isNight) android.view.View.VISIBLE else android.view.View.GONE
             b.ivMoon.visibility = if (isNight)  android.view.View.VISIBLE else android.view.View.GONE
+            // Set time cards: dark card + colorOnSurface text (readable on light bg)
+            val darkCard = ContextCompat.getDrawable(this, R.drawable.bg_set_time_card)
+            b.btnSetDayTime.background   = darkCard
+            b.btnSetNightTime.background = darkCard?.constantState?.newDrawable()
+            applySetTimeTextColor(attr(com.google.android.material.R.attr.colorOnSurface))
         } else {
+            // Preview area is dark
             b.previewContainer.setBackgroundColor(android.graphics.Color.parseColor("#0A0A0A"))
             b.previewBgFrame.visibility = android.view.View.GONE
             b.ivSun.visibility  = android.view.View.GONE
             b.ivMoon.visibility = android.view.View.GONE
+            // Set time cards: white semi-transparent card + white text (readable on dark bg)
+            val lightCard = ContextCompat.getDrawable(this, R.drawable.bg_set_time_card_light)
+            b.btnSetDayTime.background   = lightCard
+            b.btnSetNightTime.background = lightCard?.constantState?.newDrawable()
+            applySetTimeTextColor(android.graphics.Color.WHITE)
         }
+    }
+
+    private fun applySetTimeTextColor(color: Int) {
+        val tint = android.content.res.ColorStateList.valueOf(color)
+        fun traverse(v: android.view.View) {
+            when (v) {
+                is android.widget.TextView  -> v.setTextColor(color)
+                is android.widget.ImageView -> v.imageTintList = tint
+                is android.view.ViewGroup   -> repeat(v.childCount) { traverse(v.getChildAt(it)) }
+            }
+        }
+        traverse(b.setTimeContainer)
     }
 
     private fun showWelcomeIfFirstLaunch() {

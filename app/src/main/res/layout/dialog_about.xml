@@ -146,9 +146,8 @@
             android:layout_marginBottom="16dp"
             app:cardCornerRadius="16dp"
             app:cardElevation="0dp"
-            app:strokeWidth="1dp"
-            app:strokeColor="?attr/colorOutlineVariant"
-            app:cardBackgroundColor="?attr/colorSurfaceVariant">
+            app:strokeWidth="0dp"
+            app:cardBackgroundColor="?attr/colorPrimaryContainer">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -166,7 +165,7 @@
                     android:layout_weight="1"
                     android:text="App Theme"
                     android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                    android:textColor="?attr/colorOnSurface" />
+                    android:textColor="?attr/colorOnPrimaryContainer" />
 
                 <com.google.android.material.button.MaterialButtonToggleGroup
                     android:id="@+id/toggle_theme"
@@ -232,9 +231,8 @@
             android:layout_marginBottom="16dp"
             app:cardCornerRadius="16dp"
             app:cardElevation="0dp"
-            app:strokeWidth="1dp"
-            app:strokeColor="?attr/colorOutlineVariant"
-            app:cardBackgroundColor="?attr/colorSurfaceVariant">
+            app:strokeWidth="0dp"
+            app:cardBackgroundColor="?attr/colorSecondaryContainer">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -257,14 +255,15 @@
                         android:layout_height="wrap_content"
                         android:text="Background behind preview"
                         android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                        android:textColor="?attr/colorOnSurface" />
+                        android:textColor="?attr/colorOnSecondaryContainer" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Coloured banner design in the editor"
                         android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textColor="?attr/colorOnSecondaryContainer"
+                        android:alpha="0.75"
                         android:layout_marginTop="2dp" />
 
                 </LinearLayout>
@@ -299,9 +298,8 @@
             android:layout_marginBottom="8dp"
             app:cardCornerRadius="16dp"
             app:cardElevation="0dp"
-            app:strokeWidth="1dp"
-            app:strokeColor="?attr/colorOutlineVariant"
-            app:cardBackgroundColor="?attr/colorSurfaceVariant"
+            app:strokeWidth="0dp"
+            app:cardBackgroundColor="?attr/colorPrimaryContainer"
             android:clickable="true"
             android:focusable="true"
             android:foreground="?attr/selectableItemBackground">
@@ -320,14 +318,14 @@
                     android:layout_width="40dp"
                     android:layout_height="40dp"
                     android:background="@drawable/bg_icon_circle_primary"
-                    android:backgroundTint="?attr/colorPrimaryContainer"
+                    android:backgroundTint="?attr/colorOnPrimaryContainer"
                     android:layout_marginEnd="14dp">
                     <ImageView
                         android:layout_width="21dp"
                         android:layout_height="21dp"
                         android:layout_gravity="center"
                         android:src="@drawable/ic_people"
-                        android:tint="?attr/colorOnPrimaryContainer"
+                        android:tint="?attr/colorPrimaryContainer"
                         android:contentDescription="Community" />
                 </FrameLayout>
 
@@ -341,13 +339,14 @@
                         android:layout_height="wrap_content"
                         android:text="Support Group"
                         android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                        android:textColor="?attr/colorOnSurface" />
+                        android:textColor="?attr/colorOnPrimaryContainer" />
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Updates · Bug Reports · Feature Requests"
                         android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textColor="?attr/colorOnPrimaryContainer"
+                        android:alpha="0.75"
                         android:layout_marginTop="2dp" />
                 </LinearLayout>
 
@@ -356,7 +355,7 @@
                     android:layout_height="16dp"
                     android:layout_marginStart="8dp"
                     android:src="@drawable/ic_arrow_forward"
-                    android:tint="?attr/colorOnSurfaceVariant"
+                    android:tint="?attr/colorOnPrimaryContainer"
                     android:contentDescription="Open" />
 
             </LinearLayout>
@@ -370,9 +369,8 @@
             android:layout_marginBottom="16dp"
             app:cardCornerRadius="16dp"
             app:cardElevation="0dp"
-            app:strokeWidth="1dp"
-            app:strokeColor="?attr/colorOutlineVariant"
-            app:cardBackgroundColor="?attr/colorSurfaceVariant"
+            app:strokeWidth="0dp"
+            app:cardBackgroundColor="?attr/colorSecondaryContainer"
             android:clickable="true"
             android:focusable="true"
             android:foreground="?attr/selectableItemBackground">
@@ -391,14 +389,14 @@
                     android:layout_width="40dp"
                     android:layout_height="40dp"
                     android:background="@drawable/bg_icon_circle_secondary"
-                    android:backgroundTint="?attr/colorSecondaryContainer"
+                    android:backgroundTint="?attr/colorOnSecondaryContainer"
                     android:layout_marginEnd="14dp">
                     <ImageView
                         android:layout_width="21dp"
                         android:layout_height="21dp"
                         android:layout_gravity="center"
                         android:src="@drawable/ic_campaign"
-                        android:tint="?attr/colorOnSecondaryContainer"
+                        android:tint="?attr/colorSecondaryContainer"
                         android:contentDescription="Channel" />
                 </FrameLayout>
 
@@ -412,13 +410,14 @@
                         android:layout_height="wrap_content"
                         android:text="App Channel"
                         android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-                        android:textColor="?attr/colorOnSurface" />
+                        android:textColor="?attr/colorOnSecondaryContainer" />
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Discover cool apps · Announcements"
                         android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                        android:textColor="?attr/colorOnSurfaceVariant"
+                        android:textColor="?attr/colorOnSecondaryContainer"
+                        android:alpha="0.75"
                         android:layout_marginTop="2dp" />
                 </LinearLayout>
 
@@ -427,7 +426,7 @@
                     android:layout_height="16dp"
                     android:layout_marginStart="8dp"
                     android:src="@drawable/ic_arrow_forward"
-                    android:tint="?attr/colorOnSurfaceVariant"
+                    android:tint="?attr/colorOnSecondaryContainer"
                     android:contentDescription="Open" />
 
             </LinearLayout>

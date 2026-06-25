@@ -424,7 +424,6 @@
         android:layout_height="wrap_content"
         android:minHeight="72dp"
         android:layout_gravity="top"
-        android:background="?attr/colorPrimaryContainer"
         android:clipChildren="true"
         android:clipToPadding="true">
 

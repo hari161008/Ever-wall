@@ -9,7 +9,6 @@ import android.graphics.*
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.os.SystemClock
 import android.service.wallpaper.WallpaperService
 import android.view.SurfaceHolder
 import androidx.core.content.ContextCompat
@@ -31,13 +30,8 @@ class DepthWallpaperService : WallpaperService() {
 
         // Auto-hide state
         private var isScreenOff    = false
-        private var screenOnTimeMs = 0L   // elapsedRealtime() when screen last turned on
         private var clockHidden    = false
         private var clockFadeAlpha = 1f
-
-        // Grace period after screen-on before we trust KeyguardManager.
-        // Prevents the brief clock flash while the lock screen is still drawing.
-        private val SCREEN_ON_GRACE_MS = 900L
 
         private val f12   = SimpleDateFormat("h:mm",       Locale.getDefault())
         private val f12s  = SimpleDateFormat("h:mm:ss",    Locale.getDefault())
@@ -54,14 +48,13 @@ class DepthWallpaperService : WallpaperService() {
             override fun run() { drawFrame(); if (visible) handler.postDelayed(this, 1000L) }
         }
 
-        private val FADE_STEP_MS    = 16L
+        private val FADE_STEP_MS     = 16L
         private val FADE_DURATION_MS = 280f
         private var fadeStartTimeMs  = 0L
         private val fadeInTick = object : Runnable {
             override fun run() {
                 val t = ((android.os.SystemClock.elapsedRealtime() - fadeStartTimeMs) / FADE_DURATION_MS)
                     .coerceIn(0f, 1f)
-                // Ease-out cubic: fast start, smooth stop
                 val inv = 1f - t
                 clockFadeAlpha = 1f - inv * inv * inv
                 drawFrame()
@@ -83,17 +76,24 @@ class DepthWallpaperService : WallpaperService() {
                         }
                     }
                     Intent.ACTION_SCREEN_ON -> {
-                        // Record when screen turned on. We stay hidden during the grace
-                        // period so the lock screen has time to fully draw before we
-                        // consult KeyguardManager — this prevents the brief clock flash.
-                        isScreenOff    = false
-                        screenOnTimeMs = SystemClock.elapsedRealtime()
+                        isScreenOff = false
+                        // Do not touch clockHidden here — draw() will evaluate keyguard
+                        // state on the very next tick and start the fade-in if appropriate.
+                    }
+                    Intent.ACTION_USER_PRESENT -> {
+                        // Screen fully unlocked — start fade-in immediately if hidden
+                        if (WallpaperPrefs.getAutoHide(this@DepthWallpaperService) && clockHidden) {
+                            clockHidden = false
+                            fadeStartTimeMs = android.os.SystemClock.elapsedRealtime()
+                            handler.removeCallbacks(fadeInTick)
+                            handler.post(fadeInTick)
+                        }
                     }
                 }
             }
         }
 
-        private var lastSlot = -1
+        private var lastSlot      = -1
         private var lastNightMode = -1
 
         private val configReceiver = object : BroadcastReceiver() {
@@ -116,6 +116,7 @@ class DepthWallpaperService : WallpaperService() {
             val filter = IntentFilter().apply {
                 addAction(Intent.ACTION_SCREEN_OFF)
                 addAction(Intent.ACTION_SCREEN_ON)
+                addAction(Intent.ACTION_USER_PRESENT)
             }
             ContextCompat.registerReceiver(
                 this@DepthWallpaperService, screenReceiver, filter,
@@ -135,14 +136,14 @@ class DepthWallpaperService : WallpaperService() {
             tPaint.typeface = tf ?: Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             dPaint.typeface = tf ?: Typeface.create("sans-serif-light", Typeface.NORMAL)
 
-            // Always start hidden; grace-period + draw() tick decides via
-            // KeyguardManager once it has settled — eliminates the brief flash.
+            // Resolve initial hide state from keyguard — avoids false-hiding on home screen
+            // when the wallpaper becomes visible after switching apps.
             if (WallpaperPrefs.getAutoHide(this@DepthWallpaperService)) {
-                isScreenOff    = false
-                clockHidden    = true
-                clockFadeAlpha = 0f
+                val km = getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
+                val locked = isScreenOff || km?.isKeyguardLocked == true
+                clockHidden    = locked
+                clockFadeAlpha = if (locked) 0f else 1f
                 handler.removeCallbacks(fadeInTick)
-                screenOnTimeMs = SystemClock.elapsedRealtime()
             } else {
                 clockHidden    = false
                 clockFadeAlpha = 1f
@@ -259,32 +260,24 @@ class DepthWallpaperService : WallpaperService() {
             val dStr = fDate.format(now)
 
             // ── Auto-hide logic ───────────────────────────────────────────────
-            // We determine shouldHide by:
-            //   1. isScreenOff flag (set by ACTION_SCREEN_OFF, cleared by ACTION_SCREEN_ON)
-            //   2. Grace period: for SCREEN_ON_GRACE_MS after screen-on, always hide —
-            //      this prevents the brief clock flash before the lock screen draws
-            //   3. After grace period: ask KeyguardManager whether the keyguard is locked
+            // Only hides when the keyguard (lock screen) is active or screen is off.
+            // Opening/closing apps does NOT trigger hiding because we ask KeyguardManager
+            // directly on every tick rather than relying on screen on/off events.
             val autoHide = WallpaperPrefs.getAutoHide(ctx)
             if (autoHide) {
-                val elapsedSinceOn = SystemClock.elapsedRealtime() - screenOnTimeMs
-                val inGrace        = elapsedSinceOn < SCREEN_ON_GRACE_MS
-                val shouldHide = when {
-                    isScreenOff -> true
-                    inGrace     -> true
-                    else        -> {
-                        val km = getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
-                        km?.isKeyguardLocked == true
-                    }
-                }
+                val km = getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
+                val shouldHide = isScreenOff || km?.isKeyguardLocked == true
+
                 when {
                     shouldHide && !clockHidden -> {
+                        // Just entered lock screen — hide immediately
                         clockHidden = true; clockFadeAlpha = 0f
                         handler.removeCallbacks(fadeInTick)
                     }
-                    !shouldHide && clockHidden -> {
+                    !shouldHide && clockHidden && !handler.hasCallbacks(fadeInTick) -> {
+                        // Just left lock screen — start fade-in
                         clockHidden = false
                         fadeStartTimeMs = android.os.SystemClock.elapsedRealtime()
-                        handler.removeCallbacks(fadeInTick)
                         handler.post(fadeInTick)
                     }
                 }
