@@ -6,12 +6,12 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.*
-import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.service.wallpaper.WallpaperService
 import android.view.SurfaceHolder
 import androidx.core.content.ContextCompat
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
@@ -28,7 +28,6 @@ class DepthWallpaperService : WallpaperService() {
         private var visible = false
         private var tf: Typeface? = null
 
-        // Auto-hide state
         private var isScreenOff    = false
         private var clockHidden    = false
         private var clockFadeAlpha = 1f
@@ -69,19 +68,12 @@ class DepthWallpaperService : WallpaperService() {
                     Intent.ACTION_SCREEN_OFF -> {
                         isScreenOff = true
                         if (WallpaperPrefs.getAutoHide(this@DepthWallpaperService)) {
-                            clockHidden    = true
-                            clockFadeAlpha = 0f
-                            handler.removeCallbacks(fadeInTick)
-                            drawFrame()
+                            clockHidden = true; clockFadeAlpha = 0f
+                            handler.removeCallbacks(fadeInTick); drawFrame()
                         }
                     }
-                    Intent.ACTION_SCREEN_ON -> {
-                        isScreenOff = false
-                        // Do not touch clockHidden here — draw() will evaluate keyguard
-                        // state on the very next tick and start the fade-in if appropriate.
-                    }
+                    Intent.ACTION_SCREEN_ON -> { isScreenOff = false }
                     Intent.ACTION_USER_PRESENT -> {
-                        // Screen fully unlocked — start fade-in immediately if hidden
                         if (WallpaperPrefs.getAutoHide(this@DepthWallpaperService) && clockHidden) {
                             clockHidden = false
                             fadeStartTimeMs = android.os.SystemClock.elapsedRealtime()
@@ -103,10 +95,22 @@ class DepthWallpaperService : WallpaperService() {
                 val nightBit = resources.configuration.uiMode and
                     android.content.res.Configuration.UI_MODE_NIGHT_MASK
                 if (nightBit != lastNightMode) {
-                    lastNightMode = nightBit
-                    load()
+                    lastNightMode = nightBit; load()
                     if (visible) drawFrame()
                 }
+            }
+        }
+
+        private val musicArtReceiver = object : BroadcastReceiver() {
+            override fun onReceive(ctx: Context, intent: Intent) {
+                if (intent.action != WallpaperPrefs.ACTION_MUSIC_ART_CHANGED) return
+                if (!WallpaperPrefs.getMusicArtEnabled(this@DepthWallpaperService)) return
+                // Reload bg — will use music art if file exists, else fall back to original
+                val slot = WallpaperPrefs.activeSlot(this@DepthWallpaperService)
+                loadMusicArtBg(WallpaperPrefs.getBgFileForSlot(this@DepthWallpaperService, slot))
+                cachedBg?.recycle(); cachedBg = null
+                cachedBgRot = Float.NaN
+                if (visible) drawFrame()
             }
         }
 
@@ -118,13 +122,12 @@ class DepthWallpaperService : WallpaperService() {
                 addAction(Intent.ACTION_SCREEN_ON)
                 addAction(Intent.ACTION_USER_PRESENT)
             }
-            ContextCompat.registerReceiver(
-                this@DepthWallpaperService, screenReceiver, filter,
+            ContextCompat.registerReceiver(this@DepthWallpaperService, screenReceiver, filter,
                 ContextCompat.RECEIVER_NOT_EXPORTED)
-            ContextCompat.registerReceiver(
-                this@DepthWallpaperService, configReceiver,
-                IntentFilter(Intent.ACTION_CONFIGURATION_CHANGED),
-                ContextCompat.RECEIVER_NOT_EXPORTED)
+            ContextCompat.registerReceiver(this@DepthWallpaperService, configReceiver,
+                IntentFilter(Intent.ACTION_CONFIGURATION_CHANGED), ContextCompat.RECEIVER_NOT_EXPORTED)
+            LocalBroadcastManager.getInstance(this@DepthWallpaperService)
+                .registerReceiver(musicArtReceiver, IntentFilter(WallpaperPrefs.ACTION_MUSIC_ART_CHANGED))
             load()
         }
 
@@ -136,8 +139,6 @@ class DepthWallpaperService : WallpaperService() {
             tPaint.typeface = tf ?: Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             dPaint.typeface = tf ?: Typeface.create("sans-serif-light", Typeface.NORMAL)
 
-            // Resolve initial hide state from keyguard — avoids false-hiding on home screen
-            // when the wallpaper becomes visible after switching apps.
             if (WallpaperPrefs.getAutoHide(this@DepthWallpaperService)) {
                 val km = getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
                 val locked = isScreenOff || km?.isKeyguardLocked == true
@@ -145,8 +146,7 @@ class DepthWallpaperService : WallpaperService() {
                 clockFadeAlpha = if (locked) 0f else 1f
                 handler.removeCallbacks(fadeInTick)
             } else {
-                clockHidden    = false
-                clockFadeAlpha = 1f
+                clockHidden = false; clockFadeAlpha = 1f
             }
 
             val slot = WallpaperPrefs.activeSlot(this@DepthWallpaperService)
@@ -157,13 +157,26 @@ class DepthWallpaperService : WallpaperService() {
         private fun loadForSlot(slot: Int) {
             val bgF = WallpaperPrefs.getBgFileForSlot(this@DepthWallpaperService, slot)
             val fgF = WallpaperPrefs.getFgFileForSlot(this@DepthWallpaperService, slot)
-            rawBg?.recycle(); rawBg = if (bgF.exists()) decode(bgF, 2048) else null
             rawFg?.recycle(); rawFg = if (fgF.exists()) decode(fgF, 2048) else null
+            loadMusicArtBg(bgF)
             cachedBg?.recycle(); cachedBg = null
             cachedBgRot = Float.NaN; cachedW = 0; cachedH = 0
             if (surfW > 0 && surfH > 0) {
                 val p = WallpaperPrefs.loadSlot(this@DepthWallpaperService, slot)
                 buildBg(surfW, surfH, p.bgRot)
+            }
+        }
+
+        private fun loadMusicArtBg(fallbackBgFile: File? = null) {
+            val musicArtFile = WallpaperPrefs.getMusicArtFile(this@DepthWallpaperService)
+            val musicArtEnabled = WallpaperPrefs.getMusicArtEnabled(this@DepthWallpaperService)
+            rawBg?.recycle()
+            rawBg = if (musicArtEnabled && musicArtFile.exists()) {
+                decode(musicArtFile, 2048)
+            } else {
+                val slot = WallpaperPrefs.activeSlot(this@DepthWallpaperService)
+                val bgF = fallbackBgFile ?: WallpaperPrefs.getBgFileForSlot(this@DepthWallpaperService, slot)
+                if (bgF.exists()) decode(bgF, 2048) else null
             }
         }
 
@@ -180,8 +193,7 @@ class DepthWallpaperService : WallpaperService() {
             val slot = WallpaperPrefs.activeSlot(this@DepthWallpaperService)
             if (slot != lastSlot) { lastSlot = slot; loadForSlot(slot) }
             val p = WallpaperPrefs.loadSlot(this@DepthWallpaperService, slot)
-            buildBg(w, hi, p.bgRot)
-            drawFrame()
+            buildBg(w, hi, p.bgRot); drawFrame()
         }
 
         override fun onSurfaceDestroyed(h: SurfaceHolder) {
@@ -192,6 +204,7 @@ class DepthWallpaperService : WallpaperService() {
             handler.removeCallbacks(tick); handler.removeCallbacks(fadeInTick)
             try { unregisterReceiver(screenReceiver) } catch (_: Exception) {}
             try { unregisterReceiver(configReceiver) } catch (_: Exception) {}
+            try { LocalBroadcastManager.getInstance(this@DepthWallpaperService).unregisterReceiver(musicArtReceiver) } catch (_: Exception) {}
             rawBg?.recycle(); rawFg?.recycle(); cachedBg?.recycle()
             super.onDestroy()
         }
@@ -210,8 +223,7 @@ class DepthWallpaperService : WallpaperService() {
             val c = Canvas(out); c.drawColor(Color.BLACK)
             c.save(); c.translate(w / 2f, h / 2f); c.rotate(rot)
             c.drawBitmap(scaled, -sw / 2f, -sh / 2f, null); c.restore()
-            cachedBg?.recycle()
-            cachedBg = out
+            cachedBg?.recycle(); cachedBg = out
         }
 
         private fun drawFrame() {
@@ -260,22 +272,16 @@ class DepthWallpaperService : WallpaperService() {
             val dStr = fDate.format(now)
 
             // ── Auto-hide logic ───────────────────────────────────────────────
-            // Only hides when the keyguard (lock screen) is active or screen is off.
-            // Opening/closing apps does NOT trigger hiding because we ask KeyguardManager
-            // directly on every tick rather than relying on screen on/off events.
             val autoHide = WallpaperPrefs.getAutoHide(ctx)
             if (autoHide) {
                 val km = getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
                 val shouldHide = isScreenOff || km?.isKeyguardLocked == true
-
                 when {
                     shouldHide && !clockHidden -> {
-                        // Just entered lock screen — hide immediately
                         clockHidden = true; clockFadeAlpha = 0f
                         handler.removeCallbacks(fadeInTick)
                     }
                     !shouldHide && clockHidden && !handler.hasCallbacks(fadeInTick) -> {
-                        // Just left lock screen — start fade-in
                         clockHidden = false
                         fadeStartTimeMs = android.os.SystemClock.elapsedRealtime()
                         handler.post(fadeInTick)
@@ -286,34 +292,44 @@ class DepthWallpaperService : WallpaperService() {
             }
 
             val alpha = if (autoHide) clockFadeAlpha else 1f
-            if (alpha > 0f && !isPreview()) {
-                tPaint.color    = dimmedColor(color, p.clkDim, alpha)
-                tPaint.textSize = p.clockSz * H
-                tPaint.typeface = tf ?: Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-                canvas.save(); canvas.translate(p.clockX * W, p.clockY * H); canvas.rotate(p.clockRot)
-                canvas.drawText(tStr, 0f, -(tPaint.descent() + tPaint.ascent()) / 2f, tPaint)
-                canvas.restore()
 
-                val dateBase = Color.argb(
-                    (Color.alpha(color) * 0.85f).toInt().coerceIn(0, 255),
-                    Color.red(color), Color.green(color), Color.blue(color))
-                dPaint.color    = dimmedColor(dateBase, p.clkDim, alpha)
-                dPaint.textSize = p.dateSz * H
-                dPaint.typeface = tf ?: Typeface.create("sans-serif-light", Typeface.NORMAL)
-                canvas.save(); canvas.translate(p.dateX * W, p.dateY * H); canvas.rotate(p.dateRot)
-                canvas.drawText(dStr, 0f, -(dPaint.descent() + dPaint.ascent()) / 2f, dPaint)
-                canvas.restore()
+            if (alpha > 0f && !isPreview()) {
+                // Clock
+                if (p.showTime) {
+                    tPaint.color    = dimmedColor(color, p.clkDim, alpha)
+                    tPaint.textSize = p.clockSz * H
+                    tPaint.typeface = tf ?: Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                    canvas.save(); canvas.translate(p.clockX * W, p.clockY * H); canvas.rotate(p.clockRot)
+                    canvas.drawText(tStr, 0f, -(tPaint.descent() + tPaint.ascent()) / 2f, tPaint)
+                    canvas.restore()
+                }
+                // Date
+                if (p.showDate) {
+                    val dateBase = Color.argb(
+                        (Color.alpha(color) * 0.85f).toInt().coerceIn(0, 255),
+                        Color.red(color), Color.green(color), Color.blue(color))
+                    dPaint.color    = dimmedColor(dateBase, p.clkDim, alpha)
+                    dPaint.textSize = p.dateSz * H
+                    dPaint.typeface = tf ?: Typeface.create("sans-serif-light", Typeface.NORMAL)
+                    canvas.save(); canvas.translate(p.dateX * W, p.dateY * H); canvas.rotate(p.dateRot)
+                    canvas.drawText(dStr, 0f, -(dPaint.descent() + dPaint.ascent()) / 2f, dPaint)
+                    canvas.restore()
+                }
             }
 
             rawFg?.let { fg ->
+                // Skip subject when music art is actively overriding the wallpaper
+                val musicArtActive = WallpaperPrefs.getMusicArtEnabled(ctx) &&
+                    WallpaperPrefs.getMusicArtFile(ctx).exists()
+                if (musicArtActive) return@let
+
                 val base  = minOf(W / fg.width, H / fg.height); val total = base * p.subjSc
                 val dim   = (1f - p.subjDim).coerceIn(0f, 1f)
                 val dimCm = ColorMatrix(); dimCm.set(floatArrayOf(
                     dim, 0f, 0f, 0f, 0f,  0f, dim, 0f, 0f, 0f,  0f, 0f, dim, 0f, 0f,  0f, 0f, 0f, 1f, 0f))
                 val satCm = ColorMatrix(); satCm.setSaturation(p.subjSat)
                 val cm    = ColorMatrix(); cm.setConcat(dimCm, satCm)
-                fgPaint.colorFilter = ColorMatrixColorFilter(cm)
-                fgPaint.alpha = 255
+                fgPaint.colorFilter = ColorMatrixColorFilter(cm); fgPaint.alpha = 255
                 canvas.save(); canvas.translate(p.subjX * W, p.subjY * H); canvas.rotate(p.subjRot)
                 canvas.scale(total, total)
                 canvas.drawBitmap(fg, -fg.width / 2f, -fg.height / 2f, fgPaint)

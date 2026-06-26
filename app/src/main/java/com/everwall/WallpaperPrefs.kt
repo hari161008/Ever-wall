@@ -26,6 +26,8 @@ object WallpaperPrefs {
     private const val KEY_BG_SAT   = "bg_sat"
     private const val KEY_SUBJ_SAT = "subj_sat"
     private const val KEY_AUTO_HIDE = "auto_hide_lock"
+    private const val KEY_SHOW_TIME = "show_time"
+    private const val KEY_SHOW_DATE = "show_date"
 
     // Default element positions / sizes
     const val DEF_CLK_X   = 0.5f;  const val DEF_CLK_Y   = 0.28f
@@ -35,26 +37,6 @@ object WallpaperPrefs {
     const val DEF_SUBJ_X  = 0.5f;  const val DEF_SUBJ_Y  = 0.5f
     const val DEF_SUBJ_SC = 1.0f;  const val DEF_SUBJ_ROT = 0f
     const val DEF_BG_ROT  = 0f
-
-    fun saveAll(ctx: Context,
-                clkX: Float, clkY: Float, clkSz: Float, clkRot: Float,
-                dateX: Float, dateY: Float, dateSz: Float, dateRot: Float,
-                subjX: Float, subjY: Float, subjSc: Float, subjRot: Float,
-                bgRot: Float, color: Int, use24: Boolean, secs: Boolean,
-                bgDim: Float = 0f, clkDim: Float = 0f, subjDim: Float = 0f) =
-        prefs(ctx).edit().also {
-            it.putFloat(KEY_CLK_X,   clkX);   it.putFloat(KEY_CLK_Y,   clkY)
-            it.putFloat(KEY_CLK_SZ,  clkSz);  it.putFloat(KEY_CLK_ROT, clkRot)
-            it.putFloat(KEY_DATE_X,  dateX);  it.putFloat(KEY_DATE_Y,  dateY)
-            it.putFloat(KEY_DATE_SZ, dateSz); it.putFloat(KEY_DATE_ROT,dateRot)
-            it.putFloat(KEY_SUBJ_X,  subjX);  it.putFloat(KEY_SUBJ_Y,  subjY)
-            it.putFloat(KEY_SUBJ_SC, subjSc); it.putFloat(KEY_SUBJ_ROT,subjRot)
-            it.putFloat(KEY_BG_ROT,  bgRot)
-            it.putInt(KEY_COLOR, color)
-            it.putBoolean(KEY_USE24, use24); it.putBoolean(KEY_SECS, secs)
-            it.putFloat(KEY_BG_DIM,  bgDim); it.putFloat(KEY_CLK_DIM, clkDim)
-            it.putFloat(KEY_SUBJ_DIM,subjDim)
-        }.apply()
 
     /** Wipe all layout data so the editor starts fresh after new images are picked. */
     fun clearPositions(ctx: Context) = prefs(ctx).edit()
@@ -159,7 +141,8 @@ object WallpaperPrefs {
         val subjX: Float,  val subjY: Float,  val subjSc: Float,  val subjRot: Float,
         val bgRot: Float,  val color: Int,    val use24: Boolean, val secs: Boolean,
         val bgDim: Float,  val clkDim: Float, val subjDim: Float,
-        val bgSat: Float = 1f, val subjSat: Float = 1f
+        val bgSat: Float = 1f, val subjSat: Float = 1f,
+        val showTime: Boolean = true, val showDate: Boolean = true
     )
 
     fun loadSlot(ctx: Context, slot: Int): WallPrefs {
@@ -175,7 +158,8 @@ object WallpaperPrefs {
             sp.getInt(KEY_COLOR, NO_COLOR),
             sp.getBoolean(KEY_USE24, false), sp.getBoolean(KEY_SECS, false),
             sp.getFloat(KEY_BG_DIM, 0f), sp.getFloat(KEY_CLK_DIM, 0f), sp.getFloat(KEY_SUBJ_DIM, 0f),
-            sp.getFloat(KEY_BG_SAT, 1f), sp.getFloat(KEY_SUBJ_SAT, 1f)
+            sp.getFloat(KEY_BG_SAT, 1f), sp.getFloat(KEY_SUBJ_SAT, 1f),
+            sp.getBoolean(KEY_SHOW_TIME, true), sp.getBoolean(KEY_SHOW_DATE, true)
         )
     }
 
@@ -193,7 +177,16 @@ object WallpaperPrefs {
             e.putFloat(KEY_BG_DIM, p.bgDim);   e.putFloat(KEY_CLK_DIM, p.clkDim)
             e.putFloat(KEY_SUBJ_DIM, p.subjDim)
             e.putFloat(KEY_BG_SAT, p.bgSat);   e.putFloat(KEY_SUBJ_SAT, p.subjSat)
+            e.putBoolean(KEY_SHOW_TIME, p.showTime); e.putBoolean(KEY_SHOW_DATE, p.showDate)
         }.apply()
 
     private fun prefs(ctx: Context) = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+
+    // ── Music Art ─────────────────────────────────────────────────────────────
+    const val FILE_MUSIC_ART = "ew_music_art.png"
+    const val ACTION_MUSIC_ART_CHANGED = "com.everwall.MUSIC_ART_CHANGED"
+
+    fun getMusicArtEnabled(ctx: Context) = metaPrefs(ctx).getBoolean("music_art_enabled", false)
+    fun setMusicArtEnabled(ctx: Context, v: Boolean) = metaPrefs(ctx).edit().putBoolean("music_art_enabled", v).apply()
+    fun getMusicArtFile(ctx: Context) = java.io.File(ctx.filesDir, FILE_MUSIC_ART)
 }

@@ -5,6 +5,7 @@ import android.animation.ValueAnimator
 import android.app.WallpaperManager
 import android.content.ComponentName
 import android.content.Intent
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import android.content.pm.PackageManager
 import android.graphics.*
 import android.graphics.drawable.GradientDrawable
@@ -34,26 +35,26 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.color.DynamicColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.everwall.databinding.ActivityEditorBinding
+import com.everwall.databinding.DialogAboutBinding
+import com.everwall.databinding.DialogMusicArtBinding
+import com.everwall.databinding.DialogWelcomeBinding
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import java.io.File
 import java.io.FileOutputStream
 import java.util.Locale
 import android.view.LayoutInflater
-import com.everwall.databinding.DialogAboutBinding
-import com.everwall.databinding.DialogWelcomeBinding
-import com.google.android.material.bottomsheet.BottomSheetDialog
 
 class EditorActivity : AppCompatActivity() {
 
     private lateinit var b: ActivityEditorBinding
     private lateinit var bannerDrawable: BannerConcaveDrawable
-    private enum class Panel { BACKGROUND, TIME, SUBJECT }
+    private enum class Panel { BACKGROUND, TIME, DATE, SUBJECT }
     private var panel = Panel.TIME
     private var clockColor = Color.WHITE
     private var loadedBgBmp: Bitmap? = null
     private lateinit var bsb: LockableBottomSheetBehavior<android.widget.LinearLayout>
     private var sheetLocked = false
 
-    // Mode / Day-Night
     private var wallpaperMode = WallpaperPrefs.MODE_NONE
     private var editSlot      = WallpaperPrefs.EDIT_NONE
 
@@ -83,20 +84,15 @@ class EditorActivity : AppCompatActivity() {
         b.toolbarContainer.outlineProvider = object : android.view.ViewOutlineProvider() {
             override fun getOutline(view: android.view.View, outline: android.graphics.Outline) {
                 val r = concaveR
-                val w = view.width.toFloat()
-                val h = view.height.toFloat()
+                val w = view.width.toFloat(); val h = view.height.toFloat()
                 val p = android.graphics.Path().apply {
-                    moveTo(0f, 0f)
-                    lineTo(w, 0f)
-                    lineTo(w, h - r)
+                    moveTo(0f, 0f); lineTo(w, 0f); lineTo(w, h - r)
                     arcTo(android.graphics.RectF(w - r * 2f, h - r * 2f, w, h), 0f, 90f)
                     lineTo(r, h)
                     arcTo(android.graphics.RectF(0f, h - r * 2f, r * 2f, h), 90f, 90f)
-                    lineTo(0f, 0f)
-                    close()
+                    lineTo(0f, 0f); close()
                 }
-                @Suppress("DEPRECATION")
-                outline.setConvexPath(p)
+                @Suppress("DEPRECATION") outline.setConvexPath(p)
             }
         }
 
@@ -105,31 +101,18 @@ class EditorActivity : AppCompatActivity() {
             val dp      = resources.displayMetrics.density
             val base    = (72 * dp).toInt()
             val bannerH = base + bars.top
-            // Toolbar grows to absorb status bar — content padding pushes text below status bar
             b.toolbarContainer.setPadding(0, bars.top, 0, 0)
-            val lp = b.toolbarContainer.layoutParams
-            lp.height = bannerH
-            b.toolbarContainer.layoutParams = lp
-            // previewContainer fills the ENTIRE screen (behind toolbar) — the merge
+            val lp = b.toolbarContainer.layoutParams; lp.height = bannerH; b.toolbarContainer.layoutParams = lp
             val plp = b.previewContainer.layoutParams as androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams
-            plp.topMargin = 0
-            b.previewContainer.layoutParams = plp
-            // Sidebar starts below the toolbar so buttons are not hidden behind the banner
-            b.sidebarScroll.setPadding(
-                b.sidebarScroll.paddingLeft,
-                bannerH + (8 * dp).toInt(),
-                b.sidebarScroll.paddingRight,
-                (24 * dp).toInt())
-            // Bottom sheet absorbs nav bar
-            b.controlsRoot.setPadding(
-                b.controlsRoot.paddingLeft, b.controlsRoot.paddingTop,
+            plp.topMargin = 0; b.previewContainer.layoutParams = plp
+            b.sidebarScroll.setPadding(b.sidebarScroll.paddingLeft, bannerH + (8 * dp).toInt(),
+                b.sidebarScroll.paddingRight, (24 * dp).toInt())
+            b.controlsRoot.setPadding(b.controlsRoot.paddingLeft, b.controlsRoot.paddingTop,
                 b.controlsRoot.paddingRight, bars.bottom)
-            // Status bar icon colour follows system theme
             val isNight = (resources.configuration.uiMode and
                 android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
                 android.content.res.Configuration.UI_MODE_NIGHT_YES
-            WindowInsetsControllerCompat(window, window.decorView)
-                .isAppearanceLightStatusBars = !isNight
+            WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = !isNight
             WindowInsetsCompat.CONSUMED
         }
 
@@ -146,32 +129,19 @@ class EditorActivity : AppCompatActivity() {
             sheetLocked = !sheetLocked
             bsb.locked = sheetLocked
             b.ivLock.setImageResource(if (sheetLocked) R.drawable.ic_lock else R.drawable.ic_lock_open)
-
-            // Tint circle: highlighted when locked
-            val circleTint = if (sheetLocked)
-                attr(com.google.android.material.R.attr.colorSecondaryContainer)
-            else 0x1AFFFFFF.toInt()
+            val circleTint = if (sheetLocked) attr(com.google.android.material.R.attr.colorSecondaryContainer) else 0x1AFFFFFF.toInt()
             b.btnLock.background = android.graphics.drawable.GradientDrawable().also { gd ->
-                gd.shape = android.graphics.drawable.GradientDrawable.OVAL
-                gd.setColor(circleTint)
+                gd.shape = android.graphics.drawable.GradientDrawable.OVAL; gd.setColor(circleTint)
             }
-            val iconTint = if (sheetLocked)
-                attr(com.google.android.material.R.attr.colorOnSecondaryContainer)
-            else attr(com.google.android.material.R.attr.colorOnSurfaceVariant)
+            val iconTint = if (sheetLocked) attr(com.google.android.material.R.attr.colorOnSecondaryContainer)
+                           else attr(com.google.android.material.R.attr.colorOnSurfaceVariant)
             b.ivLock.setColorFilter(iconTint)
-
-            // Constrain NestedScrollView height to the visible peek area when locked
-            // so the user can scroll to the absolute bottom of all content
             val lp = b.panelsScroll.layoutParams as android.widget.LinearLayout.LayoutParams
             if (sheetLocked) {
                 val dp = resources.displayMetrics.density
-                val visH = ((PEEK_HEIGHT_DP - 52f) * dp).toInt()  // peek minus drag handle
-                lp.height  = visH
-                lp.weight  = 0f
-            } else {
-                lp.height  = 0
-                lp.weight  = 1f
-            }
+                val visH = ((PEEK_HEIGHT_DP - 52f) * dp).toInt()
+                lp.height = visH; lp.weight = 0f
+            } else { lp.height = 0; lp.weight = 1f }
             b.panelsScroll.layoutParams = lp
         }
 
@@ -179,14 +149,14 @@ class EditorActivity : AppCompatActivity() {
         b.controlsRoot.post {
             b.controlsRoot.outlineProvider = object : ViewOutlineProvider() {
                 override fun getOutline(v: View, o: android.graphics.Outline) {
-                    val r = 28f * dp
-                    o.setRoundRect(0, 0, v.width, (v.height + r).toInt(), r)
+                    val r = 28f * dp; o.setRoundRect(0, 0, v.width, (v.height + r).toInt(), r)
                 }
             }
             b.controlsRoot.clipToOutline = true
         }
         animateEntrance()
         b.btnSettings.setOnClickListener { showAboutDialog() }
+        b.btnMusicArt.setOnClickListener { showMusicArtDialog() }
         showWelcomeIfFirstLaunch()
     }
 
@@ -198,46 +168,25 @@ class EditorActivity : AppCompatActivity() {
         b.btnMode.setOnClickListener {
             MaterialAlertDialogBuilder(this)
                 .setTitle("Wallpaper Mode")
-                .setSingleChoiceItems(
-                    arrayOf("None", "Day and Night", "System Theme"),
+                .setSingleChoiceItems(arrayOf("None", "Day and Night", "System Theme"),
                     when (wallpaperMode) {
                         WallpaperPrefs.MODE_DAY_NIGHT    -> 1
                         WallpaperPrefs.MODE_SYSTEM_THEME -> 2
                         else -> 0
                     }) { dialog, which ->
-                    val newMode = when (which) {
-                        1    -> WallpaperPrefs.MODE_DAY_NIGHT
-                        2    -> WallpaperPrefs.MODE_SYSTEM_THEME
-                        else -> WallpaperPrefs.MODE_NONE
-                    }
-                    if (newMode != wallpaperMode) {
-                        saveCurrentSlot()
-                        applyWallpaperMode(newMode)
-                    }
+                    val newMode = when (which) { 1 -> WallpaperPrefs.MODE_DAY_NIGHT; 2 -> WallpaperPrefs.MODE_SYSTEM_THEME; else -> WallpaperPrefs.MODE_NONE }
+                    if (newMode != wallpaperMode) { saveCurrentSlot(); applyWallpaperMode(newMode) }
                     dialog.dismiss()
                 }.show()
         }
-
         b.btnDay.setOnClickListener {
-            if (editSlot != WallpaperPrefs.EDIT_DAY) {
-                saveCurrentSlot()
-                editSlot = WallpaperPrefs.EDIT_DAY
-                loadSlotIntoEditor(WallpaperPrefs.EDIT_DAY)
-                pillDayNight(WallpaperPrefs.EDIT_DAY)
-            }
+            if (editSlot != WallpaperPrefs.EDIT_DAY) { saveCurrentSlot(); editSlot = WallpaperPrefs.EDIT_DAY; loadSlotIntoEditor(WallpaperPrefs.EDIT_DAY); pillDayNight(WallpaperPrefs.EDIT_DAY) }
         }
         b.btnNight.setOnClickListener {
-            if (editSlot != WallpaperPrefs.EDIT_NIGHT) {
-                saveCurrentSlot()
-                editSlot = WallpaperPrefs.EDIT_NIGHT
-                loadSlotIntoEditor(WallpaperPrefs.EDIT_NIGHT)
-                pillDayNight(WallpaperPrefs.EDIT_NIGHT)
-            }
+            if (editSlot != WallpaperPrefs.EDIT_NIGHT) { saveCurrentSlot(); editSlot = WallpaperPrefs.EDIT_NIGHT; loadSlotIntoEditor(WallpaperPrefs.EDIT_NIGHT); pillDayNight(WallpaperPrefs.EDIT_NIGHT) }
         }
         b.btnSetDayTime.setOnClickListener   { showTimePicker(isDay = true) }
         b.btnSetNightTime.setOnClickListener { showTimePicker(isDay = false) }
-
-        // Restore mode UI if already in Day/Night or System Theme mode
         if (wallpaperMode == WallpaperPrefs.MODE_DAY_NIGHT || wallpaperMode == WallpaperPrefs.MODE_SYSTEM_THEME) {
             showDayNightUI(true)
             b.setTimeContainer.visibility = if (wallpaperMode == WallpaperPrefs.MODE_SYSTEM_THEME) View.GONE else View.VISIBLE
@@ -245,60 +194,38 @@ class EditorActivity : AppCompatActivity() {
         }
         updateDayNightTimeLabels()
         updateSetLiveButton()
+        updateMusicArtButtonTint(WallpaperPrefs.getMusicArtEnabled(this))
     }
 
     private fun applyWallpaperMode(mode: Int) {
-        wallpaperMode = mode
-        WallpaperPrefs.setWallpaperMode(this, mode)
+        wallpaperMode = mode; WallpaperPrefs.setWallpaperMode(this, mode)
         when (mode) {
             WallpaperPrefs.MODE_DAY_NIGHT, WallpaperPrefs.MODE_SYSTEM_THEME -> {
-                editSlot = WallpaperPrefs.EDIT_DAY
-                showDayNightUI(true)
+                editSlot = WallpaperPrefs.EDIT_DAY; showDayNightUI(true)
                 b.setTimeContainer.visibility = if (mode == WallpaperPrefs.MODE_SYSTEM_THEME) View.GONE else View.VISIBLE
-                loadSlotIntoEditor(WallpaperPrefs.EDIT_DAY)
-                pillDayNight(WallpaperPrefs.EDIT_DAY)
+                loadSlotIntoEditor(WallpaperPrefs.EDIT_DAY); pillDayNight(WallpaperPrefs.EDIT_DAY)
             }
-            else -> {
-                editSlot = WallpaperPrefs.EDIT_NONE
-                showDayNightUI(false)
-                loadSlotIntoEditor(WallpaperPrefs.EDIT_NONE)
-            }
+            else -> { editSlot = WallpaperPrefs.EDIT_NONE; showDayNightUI(false); loadSlotIntoEditor(WallpaperPrefs.EDIT_NONE) }
         }
-        b.btnMode.text = modeLabel()
-        updateSetLiveButton()
+        b.btnMode.text = modeLabel(); updateSetLiveButton()
     }
 
-    private fun showDayNightUI(show: Boolean) {
-        b.dayNightOverlay.visibility = if (show) View.VISIBLE else View.GONE
-    }
+    private fun showDayNightUI(show: Boolean) { b.dayNightOverlay.visibility = if (show) View.VISIBLE else View.GONE }
 
     private fun pillDayNight(slot: Int) {
-        val dayActive   = slot == WallpaperPrefs.EDIT_DAY
-        val bgEnabled   = WallpaperPrefs.getBgBehindPreview(this)
-        // When preview bg is on, colorPrimaryContainer == bg color → use colorPrimary instead so selected pill stands out
-        val activeTint  = if (bgEnabled) attr(com.google.android.material.R.attr.colorPrimary)
-                          else           attr(com.google.android.material.R.attr.colorPrimaryContainer)
-        val activeText  = if (bgEnabled) attr(com.google.android.material.R.attr.colorOnPrimary)
-                          else           attr(com.google.android.material.R.attr.colorOnPrimaryContainer)
-        val inactTint   = attr(com.google.android.material.R.attr.colorSurfaceContainerHigh)
-        val inactText   = attr(com.google.android.material.R.attr.colorOnSurface)
-
-        val (dayTint,  dayText)   = if (dayActive)  Pair(activeTint, activeText) else Pair(inactTint, inactText)
+        val dayActive  = slot == WallpaperPrefs.EDIT_DAY
+        val bgEnabled  = WallpaperPrefs.getBgBehindPreview(this)
+        val activeTint = if (bgEnabled) attr(com.google.android.material.R.attr.colorPrimary) else attr(com.google.android.material.R.attr.colorPrimaryContainer)
+        val activeText = if (bgEnabled) attr(com.google.android.material.R.attr.colorOnPrimary) else attr(com.google.android.material.R.attr.colorOnPrimaryContainer)
+        val inactTint  = attr(com.google.android.material.R.attr.colorSurfaceContainerHigh)
+        val inactText  = attr(com.google.android.material.R.attr.colorOnSurface)
+        val (dayTint, dayText)   = if (dayActive)  Pair(activeTint, activeText) else Pair(inactTint, inactText)
         val (nightTint, nightText) = if (!dayActive) Pair(activeTint, activeText) else Pair(inactTint, inactText)
-
-        b.btnDay.backgroundTintList   = android.content.res.ColorStateList.valueOf(dayTint)
-        b.btnDay.setTextColor(dayText)
-        b.btnDay.iconTint             = android.content.res.ColorStateList.valueOf(dayText)
-        b.btnNight.backgroundTintList = android.content.res.ColorStateList.valueOf(nightTint)
-        b.btnNight.setTextColor(nightText)
-        b.btnNight.iconTint           = android.content.res.ColorStateList.valueOf(nightText)
+        b.btnDay.backgroundTintList   = android.content.res.ColorStateList.valueOf(dayTint);   b.btnDay.setTextColor(dayText);   b.btnDay.iconTint   = android.content.res.ColorStateList.valueOf(dayText)
+        b.btnNight.backgroundTintList = android.content.res.ColorStateList.valueOf(nightTint); b.btnNight.setTextColor(nightText); b.btnNight.iconTint = android.content.res.ColorStateList.valueOf(nightText)
     }
 
-    private fun modeLabel() = when (wallpaperMode) {
-        WallpaperPrefs.MODE_DAY_NIGHT    -> "Mode: Day & Night"
-        WallpaperPrefs.MODE_SYSTEM_THEME -> "Mode: System Theme"
-        else                             -> "Mode: None"
-    }
+    private fun modeLabel() = when (wallpaperMode) { WallpaperPrefs.MODE_DAY_NIGHT -> "Mode: Day & Night"; WallpaperPrefs.MODE_SYSTEM_THEME -> "Mode: System Theme"; else -> "Mode: None" }
 
     private fun showTimePicker(isDay: Boolean) {
         val savedMins = if (isDay) WallpaperPrefs.getDayMins(this) else WallpaperPrefs.getNightMins(this)
@@ -306,16 +233,13 @@ class EditorActivity : AppCompatActivity() {
         val m = if (savedMins >= 0) savedMins % 60 else 0
         TimePickerDialog(this, { _, hour, minute ->
             val mins = hour * 60 + minute
-            if (isDay) WallpaperPrefs.setDayMins(this, mins)
-            else       WallpaperPrefs.setNightMins(this, mins)
-            updateDayNightTimeLabels()
-            updateSetLiveButton()
+            if (isDay) WallpaperPrefs.setDayMins(this, mins) else WallpaperPrefs.setNightMins(this, mins)
+            updateDayNightTimeLabels(); updateSetLiveButton()
         }, h, m, DateFormat.is24HourFormat(this)).show()
     }
 
     private fun updateDayNightTimeLabels() {
-        val d = WallpaperPrefs.getDayMins(this)
-        val n = WallpaperPrefs.getNightMins(this)
+        val d = WallpaperPrefs.getDayMins(this); val n = WallpaperPrefs.getNightMins(this)
         b.tvDayTime.text   = if (d >= 0) fmtMins(d) else "--:--"
         b.tvNightTime.text = if (n >= 0) fmtMins(n) else "--:--"
     }
@@ -323,26 +247,15 @@ class EditorActivity : AppCompatActivity() {
     private fun fmtMins(mins: Int): String {
         val h = mins / 60; val m = mins % 60
         return if (DateFormat.is24HourFormat(this)) "%02d:%02d".format(h, m)
-        else { val ampm = if (h < 12) "AM" else "PM"; val h12 = if (h % 12 == 0) 12 else h % 12
-               "%d:%02d %s".format(h12, m, ampm) }
+        else { val ampm = if (h < 12) "AM" else "PM"; val h12 = if (h % 12 == 0) 12 else h % 12; "%d:%02d %s".format(h12, m, ampm) }
     }
 
     private fun updateSetLiveButton() {
         if (wallpaperMode == WallpaperPrefs.MODE_DAY_NIGHT) {
-            val daySet   = WallpaperPrefs.getDayMins(this) >= 0
-            val nightSet = WallpaperPrefs.getNightMins(this) >= 0
-            val both     = daySet && nightSet
+            val daySet = WallpaperPrefs.getDayMins(this) >= 0; val nightSet = WallpaperPrefs.getNightMins(this) >= 0; val both = daySet && nightSet
             b.btnSetWallpaper.isEnabled = both
-            b.btnSetWallpaper.text = when {
-                !daySet && !nightSet -> "Set Day & Night"
-                !daySet   -> "Set Day Time"
-                !nightSet -> "Set Night Time"
-                else -> "Set Live"
-            }
-        } else {
-            b.btnSetWallpaper.isEnabled = true
-            b.btnSetWallpaper.text = "Set Live"
-        }
+            b.btnSetWallpaper.text = when { !daySet && !nightSet -> "Set Day & Night"; !daySet -> "Set Day Time"; !nightSet -> "Set Night Time"; else -> "Set Live" }
+        } else { b.btnSetWallpaper.isEnabled = true; b.btnSetWallpaper.text = "Set Live" }
     }
 
     // ── Slot load / save ──────────────────────────────────────────────────────
@@ -361,6 +274,7 @@ class EditorActivity : AppCompatActivity() {
             bgRot=p.bgRot;   use24hr=p.use24; showSeconds=p.secs
             bgDim=p.bgDim;   clockDim=p.clkDim; subjDim=p.subjDim
             bgSat=p.bgSat;   subjSat=p.subjSat
+            showTime=p.showTime; showDate=p.showDate
             this.clockColor = this@EditorActivity.clockColor
             setBg(bgBmp); setFg(fgBmp)
         }
@@ -369,40 +283,32 @@ class EditorActivity : AppCompatActivity() {
 
     private fun syncSlidersFromEditor() {
         with(b.editorView) {
-            b.sliderBgRot.value   = bgRot.coerceIn(-180f, 180f)
-            b.tvBgRotVal.text     = "${bgRot.toInt()}°"
-            b.sliderBgDim.value   = (bgDim * 100f).coerceIn(0f, 100f)
-            b.tvBgDimVal.text     = "${(bgDim * 100).toInt()}%"
-            b.sliderClkRot.value  = clockRot.coerceIn(-180f, 180f)
-            b.tvClkRotVal.text    = "${clockRot.toInt()}°"
-            b.sliderDateRot.value = dateRot.coerceIn(-180f, 180f)
-            b.tvDateRotVal.text   = "${dateRot.toInt()}°"
-            b.sliderTimeDim.value = (clockDim * 100f).coerceIn(0f, 100f)
-            b.tvTimeDimVal.text   = "${(clockDim * 100).toInt()}%"
-            b.sliderSubjRot.value = subjRot.coerceIn(-180f, 180f)
-            b.tvSubjRotVal.text   = "${subjRot.toInt()}°"
-            b.sliderSubjDim.value = (subjDim * 100f).coerceIn(0f, 100f)
-            b.tvSubjDimVal.text   = "${(subjDim * 100).toInt()}%"
-            b.sliderBgSat.value   = (bgSat   * 100f).coerceIn(0f, 200f)
-            b.tvBgSatVal.text     = "${(bgSat   * 100).toInt()}%"
-            b.sliderSubjSat.value = (subjSat * 100f).coerceIn(0f, 200f)
-            b.tvSubjSatVal.text   = "${(subjSat * 100).toInt()}%"
+            b.sliderBgRot.value   = bgRot.coerceIn(-180f, 180f);   b.tvBgRotVal.text  = "${bgRot.toInt()}°"
+            b.sliderBgDim.value   = (bgDim * 100f).coerceIn(0f, 100f); b.tvBgDimVal.text  = "${(bgDim * 100).toInt()}%"
+            b.sliderClkRot.value  = clockRot.coerceIn(-180f, 180f); b.tvClkRotVal.text = "${clockRot.toInt()}°"
+            b.sliderDateRot.value = dateRot.coerceIn(-180f, 180f);  b.tvDateRotVal.text= "${dateRot.toInt()}°"
+            b.sliderTimeDim.value = (clockDim * 100f).coerceIn(0f, 100f); b.tvTimeDimVal.text= "${(clockDim * 100).toInt()}%"
+            b.sliderDateDim.value = (clockDim * 100f).coerceIn(0f, 100f); b.tvDateDimVal.text= "${(clockDim * 100).toInt()}%"
+            b.sliderSubjRot.value = subjRot.coerceIn(-180f, 180f);  b.tvSubjRotVal.text= "${subjRot.toInt()}°"
+            b.sliderSubjDim.value = (subjDim * 100f).coerceIn(0f, 100f); b.tvSubjDimVal.text= "${(subjDim * 100).toInt()}%"
+            b.sliderBgSat.value   = (bgSat   * 100f).coerceIn(0f, 200f); b.tvBgSatVal.text  = "${(bgSat   * 100).toInt()}%"
+            b.sliderSubjSat.value = (subjSat * 100f).coerceIn(0f, 200f); b.tvSubjSatVal.text= "${(subjSat * 100).toInt()}%"
             b.switch24hr.isChecked    = use24hr
             b.switchSeconds.isChecked = showSeconds
+            b.switchShowTime.isChecked = showTime
+            b.switchShowDate.isChecked = showDate
         }
-        b.colorPicker.color = clockColor
-        updateSwatch(clockColor)
+        b.colorPicker.color = clockColor; updateSwatch(clockColor)
+        b.colorPickerDate.color = clockColor; updateDateSwatch(clockColor)
     }
 
     private fun currentWallPrefs() = with(b.editorView) {
         WallpaperPrefs.WallPrefs(
-            clockX, clockY, clockSz, clockRot,
-            dateX,  dateY,  dateSz,  dateRot,
-            subjX,  subjY,  subjSc,  subjRot,
-            bgRot, clockColor,
+            clockX, clockY, clockSz, clockRot, dateX, dateY, dateSz, dateRot,
+            subjX, subjY, subjSc, subjRot, bgRot, clockColor,
             b.switch24hr.isChecked, b.switchSeconds.isChecked,
-            bgDim, clockDim, subjDim,
-            bgSat, subjSat
+            bgDim, clockDim, subjDim, bgSat, subjSat,
+            b.switchShowTime.isChecked, b.switchShowDate.isChecked
         )
     }
 
@@ -413,23 +319,20 @@ class EditorActivity : AppCompatActivity() {
 
     // ── Reset dialog ──────────────────────────────────────────────────────────
     private fun showResetDialog() {
-        val items = arrayOf("Reset Background", "Reset Clock & Date", "Reset Subject")
         MaterialAlertDialogBuilder(this)
             .setTitle("Reset Element")
-            .setItems(items) { _, which ->
+            .setItems(arrayOf("Reset Background", "Reset Clock & Date", "Reset Subject")) { _, which ->
                 when (which) {
                     0 -> { resetBackground(); toast("Background reset") }
                     1 -> { resetClockDate();  toast("Clock & date reset") }
                     2 -> { resetSubject();    toast("Subject reset") }
                 }
             }
-            .setNegativeButton("Cancel", null)
-            .show()
+            .setNegativeButton("Cancel", null).show()
     }
 
     private fun resetBackground() {
-        b.editorView.bgRot = WallpaperPrefs.DEF_BG_ROT
-        b.editorView.bgDim = 0f
+        b.editorView.bgRot = WallpaperPrefs.DEF_BG_ROT; b.editorView.bgDim = 0f
         b.sliderBgRot.value = 0f; b.tvBgRotVal.text = "0°"
         b.sliderBgDim.value = 0f; b.tvBgDimVal.text = "0%"
         b.editorView.invalidate()
@@ -446,18 +349,14 @@ class EditorActivity : AppCompatActivity() {
         b.sliderClkRot.value=0f; b.tvClkRotVal.text="0°"
         b.sliderDateRot.value=0f; b.tvDateRotVal.text="0°"
         b.sliderTimeDim.value=0f; b.tvTimeDimVal.text="0%"
-        loadedBgBmp?.let { bmp ->
-            clockColor = smartColor(bmp); b.editorView.clockColor = clockColor
-            updateSwatch(clockColor); b.colorPicker.color = clockColor
-        }
+        loadedBgBmp?.let { bmp -> clockColor = smartColor(bmp); b.editorView.clockColor = clockColor; updateSwatch(clockColor); b.colorPicker.color = clockColor }
         b.editorView.invalidate()
     }
 
     private fun resetSubject() {
         with(b.editorView) {
             subjX=WallpaperPrefs.DEF_SUBJ_X; subjY=WallpaperPrefs.DEF_SUBJ_Y
-            subjSc=WallpaperPrefs.DEF_SUBJ_SC; subjRot=WallpaperPrefs.DEF_SUBJ_ROT
-            subjDim=0f
+            subjSc=WallpaperPrefs.DEF_SUBJ_SC; subjRot=WallpaperPrefs.DEF_SUBJ_ROT; subjDim=0f
         }
         b.sliderSubjRot.value=0f; b.tvSubjRotVal.text="0°"
         b.sliderSubjDim.value=0f; b.tvSubjDimVal.text="0%"
@@ -469,68 +368,51 @@ class EditorActivity : AppCompatActivity() {
         val dp = resources.displayMetrics.density
         @Suppress("UNCHECKED_CAST")
         bsb = BottomSheetBehavior.from(b.controlsRoot) as LockableBottomSheetBehavior<android.widget.LinearLayout>
-        bsb.peekHeight      = (PEEK_HEIGHT_DP * dp).toInt()
-        bsb.state           = BottomSheetBehavior.STATE_COLLAPSED
-        bsb.isDraggable     = true
-        bsb.skipCollapsed   = false
-        bsb.isHideable      = false
-        bsb.isFitToContents = true
+        bsb.peekHeight = (PEEK_HEIGHT_DP * dp).toInt(); bsb.state = BottomSheetBehavior.STATE_COLLAPSED
+        bsb.isDraggable = true; bsb.skipCollapsed = false; bsb.isHideable = false; bsb.isFitToContents = true
     }
 
     private fun applyExactSurfaceAspectRatio() {
         val surfW = WallpaperPrefs.getSurfaceW(this).takeIf { it > 0 } ?: getWinW()
         val surfH = WallpaperPrefs.getSurfaceH(this).takeIf { it > 0 } ?: getWinH()
-        b.previewContainer.viewTreeObserver.addOnGlobalLayoutListener(
-            object : ViewTreeObserver.OnGlobalLayoutListener {
-                override fun onGlobalLayout() {
-                    val contH = b.previewContainer.height
-                    val contW = b.previewArea.width
-                    if (contH <= 100 || contW <= 0) return
-                    b.previewContainer.viewTreeObserver.removeOnGlobalLayoutListener(this)
-                    val dp          = resources.displayMetrics.density
-                    val peekH       = (PEEK_HEIGHT_DP * dp).toInt()
-                    val gapH        = (BOTTOM_GAP_DP  * dp).toInt()
-                    val padH        = (14 * dp).toInt()
-                    val sidebarR    = (88 * dp).toInt()
-                    val toolbarH    = b.toolbarContainer.height.takeIf { it > 0 }
-                                        ?: ((72 * dp).toInt())
-                    val avW = (contW - padH * 2 - sidebarR).coerceAtLeast(1)
-                    val avH = (contH - peekH - gapH - toolbarH - padH).coerceAtLeast((80 * dp).toInt())
-                    val hFromW = (avW.toLong() * surfH / surfW).toInt()
-                    val finalW: Int; val finalH: Int
-                    if (hFromW <= avH) { finalW = avW; finalH = hFromW }
-                    else               { finalH = avH; finalW = (avH.toLong() * surfW / surfH).toInt() }
-                    val lp = b.previewCard.layoutParams as FrameLayout.LayoutParams
-                    lp.width     = finalW
-                    lp.height    = finalH
-                    lp.gravity   = android.view.Gravity.CENTER_HORIZONTAL or android.view.Gravity.TOP
-                    lp.topMargin = toolbarH + padH
-                    b.previewCard.layoutParams = lp
-                }
-            })
+        b.previewContainer.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
+            override fun onGlobalLayout() {
+                val contH = b.previewContainer.height; val contW = b.previewArea.width
+                if (contH <= 100 || contW <= 0) return
+                b.previewContainer.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                val dp      = resources.displayMetrics.density
+                val peekH   = (PEEK_HEIGHT_DP * dp).toInt(); val gapH  = (BOTTOM_GAP_DP * dp).toInt()
+                val padH    = (14 * dp).toInt(); val sidebarR = (88 * dp).toInt()
+                val toolbarH = b.toolbarContainer.height.takeIf { it > 0 } ?: ((72 * dp).toInt())
+                val avW = (contW - padH * 2 - sidebarR).coerceAtLeast(1)
+                val avH = (contH - peekH - gapH - toolbarH - padH).coerceAtLeast((80 * dp).toInt())
+                val hFromW = (avW.toLong() * surfH / surfW).toInt()
+                val finalW: Int; val finalH: Int
+                if (hFromW <= avH) { finalW = avW; finalH = hFromW } else { finalH = avH; finalW = (avH.toLong() * surfW / surfH).toInt() }
+                val lp = b.previewCard.layoutParams as FrameLayout.LayoutParams
+                lp.width = finalW; lp.height = finalH
+                lp.gravity = android.view.Gravity.CENTER_HORIZONTAL or android.view.Gravity.TOP
+                lp.topMargin = toolbarH + padH; b.previewCard.layoutParams = lp
+            }
+        })
     }
 
-    private fun getWinW() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
-        windowManager.currentWindowMetrics.bounds.width()
-    else { @Suppress("DEPRECATION") val d = android.util.DisplayMetrics(); @Suppress("DEPRECATION") windowManager.defaultDisplay.getRealMetrics(d); d.widthPixels }
+    private fun getWinW() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) windowManager.currentWindowMetrics.bounds.width()
+        else { @Suppress("DEPRECATION") val d = android.util.DisplayMetrics(); @Suppress("DEPRECATION") windowManager.defaultDisplay.getRealMetrics(d); d.widthPixels }
 
-    private fun getWinH() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
-        windowManager.currentWindowMetrics.bounds.height()
-    else { @Suppress("DEPRECATION") val d = android.util.DisplayMetrics(); @Suppress("DEPRECATION") windowManager.defaultDisplay.getRealMetrics(d); d.heightPixels }
+    private fun getWinH() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) windowManager.currentWindowMetrics.bounds.height()
+        else { @Suppress("DEPRECATION") val d = android.util.DisplayMetrics(); @Suppress("DEPRECATION") windowManager.defaultDisplay.getRealMetrics(d); d.heightPixels }
 
     private fun animateEntrance() {
         b.previewCard.alpha = 0f; b.previewCard.translationY = 40f
-        b.previewCard.animate().alpha(1f).translationY(0f).setDuration(420)
-            .setStartDelay(60).setInterpolator(DecelerateInterpolator(2.2f)).start()
+        b.previewCard.animate().alpha(1f).translationY(0f).setDuration(420).setStartDelay(60).setInterpolator(DecelerateInterpolator(2.2f)).start()
         b.controlsRoot.alpha = 0f
-        b.controlsRoot.animate().alpha(1f).setDuration(360).setStartDelay(120)
-            .setInterpolator(DecelerateInterpolator(2f)).start()
+        b.controlsRoot.animate().alpha(1f).setDuration(360).setStartDelay(120).setInterpolator(DecelerateInterpolator(2f)).start()
     }
 
     private fun animateBtnPress(v: View, action: () -> Unit) {
         v.animate().scaleX(0.93f).scaleY(0.93f).setDuration(70).withEndAction {
-            v.animate().scaleX(1f).scaleY(1f).setDuration(200)
-                .setInterpolator(OvershootInterpolator(2.5f)).withEndAction { action() }.start()
+            v.animate().scaleX(1f).scaleY(1f).setDuration(200).setInterpolator(OvershootInterpolator(2.5f)).withEndAction { action() }.start()
         }.start()
     }
 
@@ -540,9 +422,7 @@ class EditorActivity : AppCompatActivity() {
     // ── Load ──────────────────────────────────────────────────────────────────
     private fun loadData() {
         wallpaperMode = WallpaperPrefs.getWallpaperMode(this)
-        editSlot = if (wallpaperMode == WallpaperPrefs.MODE_DAY_NIGHT || wallpaperMode == WallpaperPrefs.MODE_SYSTEM_THEME)
-            WallpaperPrefs.EDIT_DAY else WallpaperPrefs.EDIT_NONE
-
+        editSlot = if (wallpaperMode == WallpaperPrefs.MODE_DAY_NIGHT || wallpaperMode == WallpaperPrefs.MODE_SYSTEM_THEME) WallpaperPrefs.EDIT_DAY else WallpaperPrefs.EDIT_NONE
         val p   = WallpaperPrefs.loadSlot(this, editSlot)
         val bgF = WallpaperPrefs.getBgFileForSlot(this, editSlot)
         val fgF = WallpaperPrefs.getFgFileForSlot(this, editSlot)
@@ -559,6 +439,7 @@ class EditorActivity : AppCompatActivity() {
             bgRot=p.bgRot;   use24hr=p.use24; showSeconds=p.secs
             bgDim=p.bgDim;   clockDim=p.clkDim; subjDim=p.subjDim
             this.clockColor = this@EditorActivity.clockColor
+            showTime=p.showTime; showDate=p.showDate
             setData(bgBmp, fgBmp, tf)
         }
         applyPreviewBg()
@@ -568,6 +449,7 @@ class EditorActivity : AppCompatActivity() {
     private fun setupPills() {
         b.btnPillBg.setOnClickListener      { switchPanel(Panel.BACKGROUND) }
         b.btnPillTime.setOnClickListener    { switchPanel(Panel.TIME) }
+        b.btnPillDate.setOnClickListener    { switchPanel(Panel.DATE) }
         b.btnPillSubject.setOnClickListener { switchPanel(Panel.SUBJECT) }
         b.btnChangeBg.setOnClickListener      { reqPerm(true) }
         b.btnChangeSubject.setOnClickListener { reqPerm(false) }
@@ -578,8 +460,7 @@ class EditorActivity : AppCompatActivity() {
     private fun switchPanel(p: Panel) {
         if (p == panel) return
         val out = panelView(panel)
-        out.animate().alpha(0f).translationX(-24f).setDuration(140)
-            .setInterpolator(DecelerateInterpolator())
+        out.animate().alpha(0f).translationX(-24f).setDuration(140).setInterpolator(DecelerateInterpolator())
             .withEndAction { out.visibility = View.GONE; out.translationX = 0f; showPanel(p) }.start()
     }
 
@@ -587,18 +468,20 @@ class EditorActivity : AppCompatActivity() {
         panel = p
         val inP = panelView(p)
         inP.alpha = 0f; inP.translationX = 24f; inP.visibility = View.VISIBLE
-        inP.animate().alpha(1f).translationX(0f).setDuration(200)
-            .setInterpolator(DecelerateInterpolator(1.5f)).start()
+        inP.animate().alpha(1f).translationX(0f).setDuration(200).setInterpolator(DecelerateInterpolator(1.5f)).start()
         b.panelBg.visibility      = if (p == Panel.BACKGROUND) View.VISIBLE else View.GONE
         b.panelTime.visibility    = if (p == Panel.TIME)       View.VISIBLE else View.GONE
+        b.panelDate.visibility    = if (p == Panel.DATE)       View.VISIBLE else View.GONE
         b.panelSubject.visibility = if (p == Panel.SUBJECT)    View.VISIBLE else View.GONE
         pill(b.btnPillBg,      p == Panel.BACKGROUND)
         pill(b.btnPillTime,    p == Panel.TIME)
+        pill(b.btnPillDate,    p == Panel.DATE)
         pill(b.btnPillSubject, p == Panel.SUBJECT)
     }
 
     private fun panelView(p: Panel): View = when (p) {
-        Panel.BACKGROUND -> b.panelBg; Panel.TIME -> b.panelTime; Panel.SUBJECT -> b.panelSubject
+        Panel.BACKGROUND -> b.panelBg; Panel.TIME -> b.panelTime
+        Panel.DATE -> b.panelDate;     Panel.SUBJECT -> b.panelSubject
     }
 
     private fun pill(btn: MaterialButton, active: Boolean) {
@@ -618,8 +501,9 @@ class EditorActivity : AppCompatActivity() {
 
     // ── Panels ────────────────────────────────────────────────────────────────
     private fun setupPanels() {
-        // Set initial values before wiring listeners to avoid spurious callbacks
-        b.switchAutoHide.isChecked = WallpaperPrefs.getAutoHide(this)
+        b.switchAutoHide.isChecked  = WallpaperPrefs.getAutoHide(this)
+        b.switchShowTime.isChecked  = WallpaperPrefs.loadSlot(this, editSlot).showTime
+        b.switchShowDate.isChecked  = WallpaperPrefs.loadSlot(this, editSlot).showDate
 
         b.sliderBgRot.addOnChangeListener  { _, v, _ -> b.tvBgRotVal.text  = "${v.toInt()}°"; b.editorView.bgRot    = v }
         b.sliderBgDim.addOnChangeListener  { _, v, _ -> b.tvBgDimVal.text  = "${v.toInt()}%"; b.editorView.bgDim    = v / 100f }
@@ -630,36 +514,63 @@ class EditorActivity : AppCompatActivity() {
         b.sliderSubjDim.addOnChangeListener { _, v, _ -> b.tvSubjDimVal.text = "${v.toInt()}%"; b.editorView.subjDim   = v / 100f }
         b.sliderBgSat.addOnChangeListener   { _, v, _ -> b.tvBgSatVal.text   = "${v.toInt()}%"; b.editorView.bgSat     = v / 100f }
         b.sliderSubjSat.addOnChangeListener { _, v, _ -> b.tvSubjSatVal.text = "${v.toInt()}%"; b.editorView.subjSat   = v / 100f }
+        b.sliderDateDim.addOnChangeListener { _, v, _ -> b.tvDateDimVal.text = "${v.toInt()}%"; b.editorView.clockDim  = v / 100f }
         b.switch24hr.setOnCheckedChangeListener    { _, c -> b.editorView.use24hr     = c }
         b.switchSeconds.setOnCheckedChangeListener { _, c -> b.editorView.showSeconds = c }
         b.switchAutoHide.setOnCheckedChangeListener { _, v -> WallpaperPrefs.setAutoHide(this, v) }
+        b.switchShowTime.setOnCheckedChangeListener { _, c -> b.editorView.showTime = c; b.editorView.invalidate() }
+        b.switchShowDate.setOnCheckedChangeListener { _, c -> b.editorView.showDate = c; b.editorView.invalidate() }
 
         b.chipPickColor.setOnCheckedChangeListener { _, checked ->
             if (checked) {
                 b.colorPicker.visibility = View.VISIBLE
                 b.colorPicker.animate().alpha(1f).setDuration(220).setInterpolator(DecelerateInterpolator(1.5f)).start()
             } else {
-                b.colorPicker.animate().alpha(0f).setDuration(160)
-                    .withEndAction { b.colorPicker.visibility = View.GONE }.start()
+                b.colorPicker.animate().alpha(0f).setDuration(160).withEndAction { b.colorPicker.visibility = View.GONE }.start()
             }
         }
-        b.colorPicker.onColorChanged = { c -> clockColor = c; b.editorView.clockColor = c; updateSwatch(c) }
+        b.colorPicker.onColorChanged = { c -> clockColor = c; b.editorView.clockColor = c; updateSwatch(c); updateDateSwatch(c) }
+
+        // Date panel color picker mirrors the time panel
+        b.chipPickColorDate.setOnCheckedChangeListener { _, checked ->
+            if (checked) {
+                b.colorPickerDate.visibility = View.VISIBLE
+                b.colorPickerDate.animate().alpha(1f).setDuration(220).setInterpolator(DecelerateInterpolator(1.5f)).start()
+            } else {
+                b.colorPickerDate.animate().alpha(0f).setDuration(160).withEndAction { b.colorPickerDate.visibility = View.GONE }.start()
+            }
+        }
+        b.colorPickerDate.onColorChanged = { c -> clockColor = c; b.editorView.clockColor = c; updateSwatch(c); updateDateSwatch(c) }
+        b.colorPickerDate.color = clockColor
+
+        b.btnPickFontDate.setOnClickListener { pickFont.launch("*/*") }
 
         val ftF = File(filesDir, WallpaperPrefs.FILE_FONT)
         b.tvFontStatus.text = if (ftF.exists()) ftF.name else "System default"
+        b.tvDateFontStatus.text = if (ftF.exists()) ftF.name else "System default"
 
         b.colorPicker.visibility = View.GONE; b.colorPicker.alpha = 0f
         b.chipPickColor.isChecked = false
+        b.colorPickerDate.visibility = View.GONE; b.colorPickerDate.alpha = 0f
+        b.chipPickColorDate.isChecked = false
         syncSlidersFromEditor()
     }
 
     private fun updateSwatch(c: Int) {
         val dp = resources.displayMetrics.density
-        val gd = GradientDrawable(); gd.setColor(c); gd.cornerRadius=8f*dp
-        gd.setStroke((1.5f*dp).toInt(), 0x33000000); b.colorSwatch.background = gd
+        val gd = GradientDrawable(); gd.setColor(c); gd.cornerRadius = 8f * dp
+        gd.setStroke((1.5f * dp).toInt(), 0x33000000); b.colorSwatch.background = gd
         b.colorSwatch.animate().scaleX(1.18f).scaleY(1.18f).setDuration(80).withEndAction {
-            b.colorSwatch.animate().scaleX(1f).scaleY(1f).setDuration(180)
-                .setInterpolator(OvershootInterpolator(3f)).start()
+            b.colorSwatch.animate().scaleX(1f).scaleY(1f).setDuration(180).setInterpolator(OvershootInterpolator(3f)).start()
+        }.start()
+    }
+
+    private fun updateDateSwatch(c: Int) {
+        val dp = resources.displayMetrics.density
+        val gd = GradientDrawable(); gd.setColor(c); gd.cornerRadius = 8f * dp
+        gd.setStroke((1.5f * dp).toInt(), 0x33000000); b.colorSwatchDate.background = gd
+        b.colorSwatchDate.animate().scaleX(1.18f).scaleY(1.18f).setDuration(80).withEndAction {
+            b.colorSwatchDate.animate().scaleX(1f).scaleY(1f).setDuration(180).setInterpolator(OvershootInterpolator(3f)).start()
         }.start()
     }
 
@@ -672,7 +583,7 @@ class EditorActivity : AppCompatActivity() {
         }
         WallpaperPrefs.setHasFont(this, true)
         val tf = try { Typeface.createFromFile(File(filesDir, WallpaperPrefs.FILE_FONT)) } catch (_: Exception) { null }
-        b.editorView.setFontOnly(tf); b.tvFontStatus.text = name; toast("Font applied")
+        b.editorView.setFontOnly(tf); b.tvFontStatus.text = name; b.tvDateFontStatus.text = name; toast("Font applied")
     }
 
     // ── Image replacement ─────────────────────────────────────────────────────
@@ -686,19 +597,15 @@ class EditorActivity : AppCompatActivity() {
     private fun launch(bg: Boolean) { if (bg) pickBg.launch(arrayOf("image/*")) else pickFg.launch(arrayOf("image/*")) }
 
     private fun replaceImg(uri: Uri, isBg: Boolean) {
-        val targetFile = if (isBg) WallpaperPrefs.getBgFileForSlot(this, editSlot)
-                         else      WallpaperPrefs.getFgFileForSlot(this, editSlot)
+        val targetFile = if (isBg) WallpaperPrefs.getBgFileForSlot(this, editSlot) else WallpaperPrefs.getFgFileForSlot(this, editSlot)
         val isFirstTime = !targetFile.exists()
         try {
-            val bmp = contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it) }
-                ?: return toast("Failed to read image.")
-            val r  = minOf(2048f / bmp.width, 2048f / bmp.height)
+            val bmp = contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it) } ?: return toast("Failed to read image.")
+            val r = minOf(2048f / bmp.width, 2048f / bmp.height)
             val sc = if (r < 1f) Bitmap.createScaledBitmap(bmp,(bmp.width*r).toInt(),(bmp.height*r).toInt(),true) else bmp
             FileOutputStream(targetFile).use { sc.compress(Bitmap.CompressFormat.PNG, 100, it) }
             if (isFirstTime) WallpaperPrefs.saveToSlot(this, editSlot,
-                WallpaperPrefs.loadSlot(this, editSlot).copy(
-                    clockX=WallpaperPrefs.DEF_CLK_X, clockY=WallpaperPrefs.DEF_CLK_Y,
-                    subjX=WallpaperPrefs.DEF_SUBJ_X, subjY=WallpaperPrefs.DEF_SUBJ_Y))
+                WallpaperPrefs.loadSlot(this, editSlot).copy(clockX=WallpaperPrefs.DEF_CLK_X, clockY=WallpaperPrefs.DEF_CLK_Y, subjX=WallpaperPrefs.DEF_SUBJ_X, subjY=WallpaperPrefs.DEF_SUBJ_Y))
             if (isBg) loadedBgBmp = sc
             b.previewCard.animate().alpha(0.3f).setDuration(100).withEndAction {
                 loadSlotIntoEditor(editSlot)
@@ -708,17 +615,13 @@ class EditorActivity : AppCompatActivity() {
     }
 
     // ── Save & set wallpaper ──────────────────────────────────────────────────
-    private fun save() {
-        saveCurrentSlot()
-        WallpaperPrefs.setWallpaperMode(this, wallpaperMode)
-    }
+    private fun save() { saveCurrentSlot(); WallpaperPrefs.setWallpaperMode(this, wallpaperMode) }
 
     private fun saveAndLaunch() {
         save()
         try {
             startActivity(Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER).apply {
-                putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT,
-                    ComponentName(this@EditorActivity, DepthWallpaperService::class.java))
+                putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT, ComponentName(this@EditorActivity, DepthWallpaperService::class.java))
             })
         } catch (e: Exception) { toast("Cannot open wallpaper picker: ${e.message}") }
     }
@@ -748,13 +651,7 @@ class EditorActivity : AppCompatActivity() {
     private fun showAboutDialog() {
         val dialog = BottomSheetDialog(this)
         val db = DialogAboutBinding.inflate(layoutInflater)
-
-        try {
-            val pInfo = packageManager.getPackageInfo(packageName, 0)
-            db.tvVersion.text = "Version ${pInfo.versionName}"
-        } catch (_: Exception) {}
-
-        // Theme selector
+        try { val pInfo = packageManager.getPackageInfo(packageName, 0); db.tvVersion.text = "Version ${pInfo.versionName}" } catch (_: Exception) {}
         db.toggleTheme.check(when (WallpaperPrefs.getAppTheme(this)) {
             WallpaperPrefs.THEME_LIGHT -> R.id.btn_theme_light
             WallpaperPrefs.THEME_DARK  -> R.id.btn_theme_dark
@@ -762,28 +659,18 @@ class EditorActivity : AppCompatActivity() {
         })
         db.toggleTheme.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (isChecked) {
-                val theme = when (checkedId) {
-                    R.id.btn_theme_light -> WallpaperPrefs.THEME_LIGHT
-                    R.id.btn_theme_dark  -> WallpaperPrefs.THEME_DARK
-                    else                 -> WallpaperPrefs.THEME_AUTO
-                }
-                WallpaperPrefs.setAppTheme(this, theme)
-                applyThemeMode()
+                val theme = when (checkedId) { R.id.btn_theme_light -> WallpaperPrefs.THEME_LIGHT; R.id.btn_theme_dark -> WallpaperPrefs.THEME_DARK; else -> WallpaperPrefs.THEME_AUTO }
+                WallpaperPrefs.setAppTheme(this, theme); applyThemeMode()
             }
         }
-
         db.swBgBehindPreview.isChecked = WallpaperPrefs.getBgBehindPreview(this)
         db.swBgBehindPreview.setOnCheckedChangeListener { _, v ->
-            WallpaperPrefs.setBgBehindPreview(this, v)
-            applyPreviewBg()
+            WallpaperPrefs.setBgBehindPreview(this, v); applyPreviewBg()
             if (wallpaperMode != WallpaperPrefs.MODE_NONE) pillDayNight(editSlot)
         }
-
         db.cardSupportGroup.setOnClickListener { openUrl("https://t.me/EverlastingAndroidTweak") }
         db.cardAppChannel.setOnClickListener   { openUrl("https://t.me/CoolAppStore") }
-
-        dialog.setContentView(db.root)
-        dialog.show()
+        dialog.setContentView(db.root); dialog.show()
     }
 
     private fun applyThemeMode() {
@@ -796,16 +683,12 @@ class EditorActivity : AppCompatActivity() {
 
     private fun applyPreviewBg() {
         val enabled       = WallpaperPrefs.getBgBehindPreview(this)
-        val isNight       = (resources.configuration.uiMode and
-            android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
-            android.content.res.Configuration.UI_MODE_NIGHT_YES
+        val isNight       = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
         val controller    = WindowInsetsControllerCompat(window, window.decorView)
         val primaryCont   = attr(com.google.android.material.R.attr.colorPrimaryContainer)
         val onPrimaryCont = attr(com.google.android.material.R.attr.colorOnPrimaryContainer)
         val primary       = attr(com.google.android.material.R.attr.colorPrimary)
         val onPrimary     = attr(com.google.android.material.R.attr.colorOnPrimary)
-
-        // Toolbar: always colorPrimaryContainer with concave bottom corners
         bannerDrawable.setFillColor(primaryCont)
         b.tvAppTitle.setTextColor(onPrimaryCont)
         b.btnSettings.backgroundTintList = android.content.res.ColorStateList.valueOf(primary)
@@ -813,32 +696,22 @@ class EditorActivity : AppCompatActivity() {
         controller.isAppearanceLightStatusBars = !isNight
         for (i in 0 until b.toolbarContainer.childCount) {
             val child = b.toolbarContainer.getChildAt(i)
-            if ("toolbar_deco" == child.tag)
-                child.backgroundTintList = android.content.res.ColorStateList.valueOf(onPrimaryCont)
+            if ("toolbar_deco" == child.tag) child.backgroundTintList = android.content.res.ColorStateList.valueOf(onPrimaryCont)
         }
-
         if (enabled) {
-            // Preview matches toolbar — seamless join
             b.previewContainer.setBackgroundColor(primaryCont)
-            b.previewBgFrame.setBackgroundColor(primaryCont)
-            b.previewBgFrame.visibility = android.view.View.VISIBLE
+            b.previewBgFrame.setBackgroundColor(primaryCont); b.previewBgFrame.visibility = android.view.View.VISIBLE
             b.ivSun.visibility  = if (!isNight) android.view.View.VISIBLE else android.view.View.GONE
             b.ivMoon.visibility = if (isNight)  android.view.View.VISIBLE else android.view.View.GONE
-            // Set time cards: dark card + colorOnSurface text (readable on light bg)
             val darkCard = ContextCompat.getDrawable(this, R.drawable.bg_set_time_card)
-            b.btnSetDayTime.background   = darkCard
-            b.btnSetNightTime.background = darkCard?.constantState?.newDrawable()
+            b.btnSetDayTime.background = darkCard; b.btnSetNightTime.background = darkCard?.constantState?.newDrawable()
             applySetTimeTextColor(attr(com.google.android.material.R.attr.colorOnSurface))
         } else {
-            // Preview area is dark
             b.previewContainer.setBackgroundColor(android.graphics.Color.parseColor("#0A0A0A"))
             b.previewBgFrame.visibility = android.view.View.GONE
-            b.ivSun.visibility  = android.view.View.GONE
-            b.ivMoon.visibility = android.view.View.GONE
-            // Set time cards: white semi-transparent card + white text (readable on dark bg)
+            b.ivSun.visibility = android.view.View.GONE; b.ivMoon.visibility = android.view.View.GONE
             val lightCard = ContextCompat.getDrawable(this, R.drawable.bg_set_time_card_light)
-            b.btnSetDayTime.background   = lightCard
-            b.btnSetNightTime.background = lightCard?.constantState?.newDrawable()
+            b.btnSetDayTime.background = lightCard; b.btnSetNightTime.background = lightCard?.constantState?.newDrawable()
             applySetTimeTextColor(android.graphics.Color.WHITE)
         }
     }
@@ -859,22 +732,63 @@ class EditorActivity : AppCompatActivity() {
         val prefs = getSharedPreferences("everwall_prefs", MODE_PRIVATE)
         if (prefs.getBoolean("welcome_shown", false)) return
         prefs.edit().putBoolean("welcome_shown", true).apply()
-
-        val dialog = BottomSheetDialog(this)
-        dialog.setCancelable(false)
+        val dialog = BottomSheetDialog(this); dialog.setCancelable(false)
         val wb = DialogWelcomeBinding.inflate(layoutInflater)
-
         wb.btnWelcomeContinue.setOnClickListener { dialog.dismiss() }
-        wb.btnWelcomeJoin.setOnClickListener {
-            openUrl("https://t.me/EverlastingAndroidTweak")
-            dialog.dismiss()
+        wb.btnWelcomeJoin.setOnClickListener { openUrl("https://t.me/EverlastingAndroidTweak"); dialog.dismiss() }
+        dialog.setContentView(wb.root); dialog.show()
+    }
+
+    private fun isNotificationListenerGranted(): Boolean {
+        val flat = android.provider.Settings.Secure.getString(
+            contentResolver, "enabled_notification_listeners") ?: return false
+        return flat.split(":").any { it.trim().startsWith(packageName) }
+    }
+
+    private fun showMusicArtDialog() {
+        val dialog = BottomSheetDialog(this)
+        val mb = DialogMusicArtBinding.inflate(layoutInflater)
+
+        val granted = isNotificationListenerGranted()
+
+        mb.switchMusicArt.isChecked = WallpaperPrefs.getMusicArtEnabled(this)
+        mb.switchMusicArt.isEnabled = granted
+        mb.switchMusicArt.setOnCheckedChangeListener { _, checked ->
+            WallpaperPrefs.setMusicArtEnabled(this, checked)
+            updateMusicArtButtonTint(checked)
+            // If disabling, clear any cached art so wallpaper reverts immediately
+            if (!checked) {
+                WallpaperPrefs.getMusicArtFile(this).delete()
+                LocalBroadcastManager.getInstance(this)
+                    .sendBroadcast(Intent(WallpaperPrefs.ACTION_MUSIC_ART_CHANGED))
+            }
         }
-        dialog.setContentView(wb.root)
-        dialog.show()
+
+        if (granted) {
+            mb.btnGrantNotifAccess.visibility = View.GONE
+        } else {
+            mb.btnGrantNotifAccess.visibility = View.VISIBLE
+            mb.btnGrantNotifAccess.setOnClickListener {
+                try {
+                    startActivity(Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+                } catch (_: Exception) { toast("Cannot open settings") }
+                dialog.dismiss()
+            }
+        }
+
+        dialog.setContentView(mb.root); dialog.show()
+    }
+
+    private fun updateMusicArtButtonTint(enabled: Boolean) {
+        val tint = if (enabled) attr(com.google.android.material.R.attr.colorPrimaryContainer) else Color.TRANSPARENT
+        val textTint = if (enabled) attr(com.google.android.material.R.attr.colorOnPrimaryContainer) else attr(com.google.android.material.R.attr.colorOnSurfaceVariant)
+        b.btnMusicArt.backgroundTintList = android.content.res.ColorStateList.valueOf(tint)
+        b.btnMusicArt.setTextColor(textTint)
+        b.btnMusicArt.iconTint = android.content.res.ColorStateList.valueOf(textTint)
+        b.btnMusicArt.strokeWidth = if (enabled) 0 else resources.getDimensionPixelSize(R.dimen.pill_stroke)
     }
 
     private fun openUrl(url: String) {
-        try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) }
-        catch (_: Exception) { toast("Cannot open link") }
+        try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) } catch (_: Exception) { toast("Cannot open link") }
     }
 }

@@ -638,6 +638,24 @@
                         app:iconGravity="textStart"
                         app:iconPadding="4dp" />
 
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_music_art"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="34dp"
+                        android:layout_marginStart="8dp"
+                        android:text="Music Art"
+                        android:textSize="11sp"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="10dp"
+                        app:cornerRadius="17dp"
+                        app:strokeWidth="1dp"
+                        app:strokeColor="?attr/colorOutline"
+                        app:icon="@drawable/ic_music_art"
+                        app:iconSize="14dp"
+                        app:iconGravity="textStart"
+                        app:iconPadding="4dp" />
+
                 </LinearLayout>
 
                 <!-- Navigation pills — equal weight, scrolls with content -->
@@ -646,8 +664,8 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:paddingStart="12dp"
-                    android:paddingEnd="12dp"
+                    android:paddingStart="10dp"
+                    android:paddingEnd="10dp"
                     android:paddingTop="8dp"
                     android:paddingBottom="8dp">
 
@@ -655,51 +673,96 @@
                         android:id="@+id/btn_pill_bg"
                         style="@style/Widget.Material3.Button.OutlinedButton"
                         android:layout_width="0dp"
-                        android:layout_height="44dp"
+                        android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Background"
-                        android:textSize="11sp"
+                        android:text="BG"
+                        android:textSize="12sp"
+                        android:textAllCaps="false"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:paddingTop="12dp"
+                        android:paddingBottom="12dp"
+                        android:paddingStart="4dp"
+                        android:paddingEnd="4dp"
                         android:layout_marginEnd="6dp"
-                        app:cornerRadius="22dp"
-                        app:strokeWidth="1dp"
+                        app:cornerRadius="50dp"
+                        app:strokeWidth="1.5dp"
                         app:strokeColor="?attr/colorOutline"
                         app:icon="@drawable/ic_add_photo"
-                        app:iconSize="14dp"
-                        app:iconGravity="textStart"
-                        app:iconPadding="4dp" />
+                        app:iconSize="22dp"
+                        app:iconGravity="top"
+                        app:iconPadding="6dp" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_pill_time"
                         style="@style/Widget.Material3.Button.OutlinedButton"
                         android:layout_width="0dp"
-                        android:layout_height="44dp"
+                        android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Time &amp; Date"
-                        android:textSize="11sp"
+                        android:text="Time"
+                        android:textSize="12sp"
+                        android:textAllCaps="false"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:paddingTop="12dp"
+                        android:paddingBottom="12dp"
+                        android:paddingStart="4dp"
+                        android:paddingEnd="4dp"
                         android:layout_marginEnd="6dp"
-                        app:cornerRadius="22dp"
-                        app:strokeWidth="1dp"
+                        app:cornerRadius="50dp"
+                        app:strokeWidth="1.5dp"
                         app:strokeColor="?attr/colorOutline"
-                        app:icon="@drawable/ic_font"
-                        app:iconSize="14dp"
-                        app:iconGravity="textStart"
-                        app:iconPadding="4dp" />
+                        app:icon="@drawable/ic_clock"
+                        app:iconSize="22dp"
+                        app:iconGravity="top"
+                        app:iconPadding="6dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_pill_date"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Date"
+                        android:textSize="12sp"
+                        android:textAllCaps="false"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:paddingTop="12dp"
+                        android:paddingBottom="12dp"
+                        android:paddingStart="4dp"
+                        android:paddingEnd="4dp"
+                        android:layout_marginEnd="6dp"
+                        app:cornerRadius="50dp"
+                        app:strokeWidth="1.5dp"
+                        app:strokeColor="?attr/colorOutline"
+                        app:icon="@drawable/ic_calendar"
+                        app:iconSize="22dp"
+                        app:iconGravity="top"
+                        app:iconPadding="6dp" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_pill_subject"
                         style="@style/Widget.Material3.Button.OutlinedButton"
                         android:layout_width="0dp"
-                        android:layout_height="44dp"
+                        android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="Subject"
-                        android:textSize="11sp"
-                        app:cornerRadius="22dp"
-                        app:strokeWidth="1dp"
+                        android:textSize="12sp"
+                        android:textAllCaps="false"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:paddingTop="12dp"
+                        android:paddingBottom="12dp"
+                        android:paddingStart="4dp"
+                        android:paddingEnd="4dp"
+                        app:cornerRadius="50dp"
+                        app:strokeWidth="1.5dp"
                         app:strokeColor="?attr/colorOutline"
-                        app:icon="@drawable/ic_person_add"
-                        app:iconSize="14dp"
-                        app:iconGravity="textStart"
-                        app:iconPadding="4dp" />
+                        app:icon="@drawable/ic_layers"
+                        app:iconSize="22dp"
+                        app:iconGravity="top"
+                        app:iconPadding="6dp" />
 
                 </LinearLayout>
 
@@ -785,7 +848,23 @@
                     android:layout_width="match_parent" android:layout_height="wrap_content"
                     android:orientation="vertical" android:padding="22dp" android:visibility="visible">
 
-                    <!-- Modern info banner -->
+                    <!-- Enable Time toggle -->
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="56dp"
+                        android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="14dp">
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Enable Time" android:textAppearance="@style/TextAppearance.Material3.BodyLarge" android:textColor="?attr/colorOnSurface" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Show or hide the clock on wallpaper" android:textAppearance="@style/TextAppearance.Material3.BodySmall" android:textColor="?attr/colorOnSurfaceVariant" />
+                        </LinearLayout>
+                        <com.google.android.material.switchmaterial.SwitchMaterial android:id="@+id/switch_show_time"
+                            android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="true" />
+                    </LinearLayout>
+
+                    <View android:layout_width="match_parent" android:layout_height="1dp"
+                        android:background="?attr/colorOutlineVariant" android:layout_marginBottom="22dp" />
+
+                    <!-- Info banner -->
                     <com.google.android.material.card.MaterialCardView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -874,17 +953,6 @@
                     </LinearLayout>
                     <com.google.android.material.slider.Slider android:id="@+id/slider_clk_rot"
                         android:layout_width="match_parent" android:layout_height="wrap_content"
-                        android:valueFrom="-180" android:valueTo="180" android:value="0" android:stepSize="1" android:layout_marginBottom="8dp" />
-                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                        android:orientation="horizontal" android:gravity="center_vertical">
-                        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
-                            android:text="Date" android:textAppearance="@style/TextAppearance.Material3.BodyLarge" android:textColor="?attr/colorOnSurface" />
-                        <TextView android:id="@+id/tv_date_rot_val" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="0°" android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
-                            android:textColor="?attr/colorPrimary" android:minWidth="44dp" android:gravity="end" />
-                    </LinearLayout>
-                    <com.google.android.material.slider.Slider android:id="@+id/slider_date_rot"
-                        android:layout_width="match_parent" android:layout_height="wrap_content"
                         android:valueFrom="-180" android:valueTo="180" android:value="0" android:stepSize="1" android:layout_marginBottom="22dp" />
 
                     <View android:layout_width="match_parent" android:layout_height="1dp"
@@ -957,6 +1025,153 @@
                     </LinearLayout>
                     <com.everwall.ColorPickerView
                         android:id="@+id/color_picker"
+                        android:layout_width="match_parent" android:layout_height="170dp"
+                        android:layout_marginBottom="4dp" android:visibility="gone" android:alpha="0" />
+
+                </LinearLayout>
+
+                <!-- ═══ DATE PANEL ═══ -->
+                <LinearLayout android:id="@+id/panel_date"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="vertical" android:padding="22dp" android:visibility="gone">
+
+                    <!-- Enable Date toggle -->
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="56dp"
+                        android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="14dp">
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Enable Date" android:textAppearance="@style/TextAppearance.Material3.BodyLarge" android:textColor="?attr/colorOnSurface" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Show or hide the date on wallpaper" android:textAppearance="@style/TextAppearance.Material3.BodySmall" android:textColor="?attr/colorOnSurfaceVariant" />
+                        </LinearLayout>
+                        <com.google.android.material.switchmaterial.SwitchMaterial android:id="@+id/switch_show_date"
+                            android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="true" />
+                    </LinearLayout>
+
+                    <View android:layout_width="match_parent" android:layout_height="1dp"
+                        android:background="?attr/colorOutlineVariant" android:layout_marginBottom="22dp" />
+
+                    <!-- Info banner -->
+                    <com.google.android.material.card.MaterialCardView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="22dp"
+                        app:cardBackgroundColor="?attr/colorSecondaryContainer"
+                        app:cardCornerRadius="16dp"
+                        app:cardElevation="0dp"
+                        app:strokeWidth="0dp">
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:paddingStart="14dp"
+                            android:paddingEnd="14dp"
+                            android:paddingTop="12dp"
+                            android:paddingBottom="12dp">
+                            <ImageView
+                                android:layout_width="18dp"
+                                android:layout_height="18dp"
+                                android:src="@drawable/ic_info_outline"
+                                android:layout_marginEnd="10dp"
+                                app:tint="?attr/colorOnSecondaryContainer"
+                                android:contentDescription="Info" />
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Tap an element in the preview to select it. Then drag to reposition or pinch to resize."
+                                android:textAppearance="@style/TextAppearance.Material3.BodySmall"
+                                android:textColor="?attr/colorOnSecondaryContainer"
+                                android:lineSpacingExtra="2dp" />
+                        </LinearLayout>
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="ROTATION" android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
+                        android:textColor="?attr/colorPrimary" android:letterSpacing="0.12" android:layout_marginBottom="6dp" />
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="horizontal" android:gravity="center_vertical">
+                        <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                            android:text="Date" android:textAppearance="@style/TextAppearance.Material3.BodyLarge" android:textColor="?attr/colorOnSurface" />
+                        <TextView android:id="@+id/tv_date_rot_val" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="0°" android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
+                            android:textColor="?attr/colorPrimary" android:minWidth="44dp" android:gravity="end" />
+                    </LinearLayout>
+                    <com.google.android.material.slider.Slider android:id="@+id/slider_date_rot"
+                        android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:valueFrom="-180" android:valueTo="180" android:value="0" android:stepSize="1" android:layout_marginBottom="22dp" />
+
+                    <View android:layout_width="match_parent" android:layout_height="1dp"
+                        android:background="?attr/colorOutlineVariant" android:layout_marginBottom="22dp" />
+
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="DIM" android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
+                        android:textColor="?attr/colorPrimary" android:letterSpacing="0.12" android:layout_marginBottom="6dp" />
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="horizontal" android:gravity="center_vertical">
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Dim Element" android:textAppearance="@style/TextAppearance.Material3.BodyLarge" android:textColor="?attr/colorOnSurface" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Reduce date brightness" android:textAppearance="@style/TextAppearance.Material3.BodySmall" android:textColor="?attr/colorOnSurfaceVariant" />
+                        </LinearLayout>
+                        <TextView android:id="@+id/tv_date_dim_val" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="0%" android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
+                            android:textColor="?attr/colorPrimary" android:minWidth="44dp" android:gravity="end" />
+                    </LinearLayout>
+                    <com.google.android.material.slider.Slider android:id="@+id/slider_date_dim"
+                        android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:valueFrom="0" android:valueTo="100" android:value="0" android:stepSize="1" android:layout_marginBottom="22dp" />
+
+                    <View android:layout_width="match_parent" android:layout_height="1dp"
+                        android:background="?attr/colorOutlineVariant" android:layout_marginBottom="22dp" />
+
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="FONT" android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
+                        android:textColor="?attr/colorPrimary" android:letterSpacing="0.12" android:layout_marginBottom="6dp" />
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="60dp"
+                        android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="22dp">
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Use Custom Font" android:textAppearance="@style/TextAppearance.Material3.BodyLarge" android:textColor="?attr/colorOnSurface" />
+                            <TextView android:id="@+id/tv_date_font_status" android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="System default" android:textAppearance="@style/TextAppearance.Material3.BodySmall" android:textColor="?attr/colorOnSurfaceVariant" />
+                        </LinearLayout>
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_pick_font_date"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
+                            android:layout_width="wrap_content" android:layout_height="44dp"
+                            android:text="Choose .ttf" android:textSize="12sp"
+                            android:paddingStart="14dp" android:paddingEnd="14dp" app:cornerRadius="22dp" />
+                    </LinearLayout>
+
+                    <View android:layout_width="match_parent" android:layout_height="1dp"
+                        android:background="?attr/colorOutlineVariant" android:layout_marginBottom="22dp" />
+
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="COLOR" android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
+                        android:textColor="?attr/colorPrimary" android:letterSpacing="0.12" android:layout_marginBottom="6dp" />
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="10dp">
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Font Color" android:textAppearance="@style/TextAppearance.Material3.BodyLarge" android:textColor="?attr/colorOnSurface" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Shared with clock color" android:textAppearance="@style/TextAppearance.Material3.BodySmall" android:textColor="?attr/colorOnSurfaceVariant" />
+                        </LinearLayout>
+                        <com.google.android.material.chip.Chip
+                            android:id="@+id/chip_pick_color_date"
+                            style="@style/Widget.Material3.Chip.Filter"
+                            android:layout_width="wrap_content" android:layout_height="40dp"
+                            android:text="Pick" android:checkable="true" android:checked="false"
+                            android:layout_marginEnd="10dp" app:chipMinHeight="40dp" />
+                        <View android:id="@+id/color_swatch_date"
+                            android:layout_width="38dp" android:layout_height="38dp"
+                            android:background="@drawable/bg_color_swatch" />
+                    </LinearLayout>
+                    <com.everwall.ColorPickerView
+                        android:id="@+id/color_picker_date"
                         android:layout_width="match_parent" android:layout_height="170dp"
                         android:layout_marginBottom="4dp" android:visibility="gone" android:alpha="0" />
 

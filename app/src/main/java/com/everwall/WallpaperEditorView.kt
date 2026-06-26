@@ -24,6 +24,7 @@ class WallpaperEditorView @JvmOverloads constructor(
     var clockColor = Color.WHITE
     var bgDim = 0f; var clockDim = 0f; var subjDim = 0f
     var bgSat = 1f;  var subjSat = 1f
+    var showTime = true; var showDate = true
 
     var activeElement = ActiveElement.NONE
         private set
@@ -36,7 +37,7 @@ class WallpaperEditorView @JvmOverloads constructor(
     private var pDownX = 0f; private var pDownY = 0f
     private var dLastX = 0f; private var dLastY = 0f
     private var isDragging = false
-    private var scalingInProgress = false   // true from pinch-start until next ACTION_DOWN
+    private var scalingInProgress = false
 
     private val scaleDetector = ScaleGestureDetector(context,
         object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
@@ -65,7 +66,6 @@ class WallpaperEditorView @JvmOverloads constructor(
         pathEffect = DashPathEffect(floatArrayOf(14f, 8f), 0f)
     }
 
-    // Cached reference width for clock so the selection box never reflows on tick
     private var _refClkW   = 0f
     private var _refClkKey = ""
 
@@ -103,10 +103,8 @@ class WallpaperEditorView @JvmOverloads constructor(
     fun setFontOnly(typeface: Typeface?) { tf = typeface; applyTypeface(); invalidate() }
 
     private fun applyTypeface() {
-        // Use monospace for clock so digit widths are stable across time changes
         val clockTf = tf ?: Typeface.MONOSPACE
         tPaint.typeface = clockTf
-        // Also request tabular numbers on API 26+ for variable fonts
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             try { tPaint.fontVariationSettings = "'tnum' 1" } catch (_: Exception) {}
         }
@@ -148,37 +146,41 @@ class WallpaperEditorView @JvmOverloads constructor(
         val tStr = timeStr(now); val dStr = fDate.format(now)
 
         // ── Clock ────────────────────────────────────────────────────────────
-        val clkPx = clockSz * H
-        tPaint.color    = dimmedColor(clockColor, clockDim)
-        tPaint.textSize = clkPx
-        canvas.save(); canvas.translate(clockX * W, clockY * H); canvas.rotate(clockRot)
-        canvas.drawText(tStr, 0f, -(tPaint.descent() + tPaint.ascent()) / 2f, tPaint)
-        canvas.restore()
-        if (activeElement == ActiveElement.CLOCK) {
-            val tw = clockRefWidth()
+        if (showTime) {
+            val clkPx = clockSz * H
+            tPaint.color    = dimmedColor(clockColor, clockDim)
+            tPaint.textSize = clkPx
             canvas.save(); canvas.translate(clockX * W, clockY * H); canvas.rotate(clockRot)
-            val r = RectF(-tw/2f-16f*dp, -clkPx/2f-12f*dp, tw/2f+16f*dp, clkPx/2f+12f*dp)
-            canvas.drawRoundRect(r, 12f*dp, 12f*dp, selGlow)
-            canvas.drawRoundRect(r, 12f*dp, 12f*dp, selDash)
+            canvas.drawText(tStr, 0f, -(tPaint.descent() + tPaint.ascent()) / 2f, tPaint)
             canvas.restore()
+            if (activeElement == ActiveElement.CLOCK) {
+                val tw = clockRefWidth()
+                canvas.save(); canvas.translate(clockX * W, clockY * H); canvas.rotate(clockRot)
+                val r = RectF(-tw/2f-16f*dp, -clkPx/2f-12f*dp, tw/2f+16f*dp, clkPx/2f+12f*dp)
+                canvas.drawRoundRect(r, 12f*dp, 12f*dp, selGlow)
+                canvas.drawRoundRect(r, 12f*dp, 12f*dp, selDash)
+                canvas.restore()
+            }
         }
 
         // ── Date ─────────────────────────────────────────────────────────────
-        val datePx = dateSz * H
-        val dateBaseColor = Color.argb((Color.alpha(clockColor)*0.85f).toInt().coerceIn(0,255),
-            Color.red(clockColor), Color.green(clockColor), Color.blue(clockColor))
-        dPaint.color    = dimmedColor(dateBaseColor, clockDim)
-        dPaint.textSize = datePx
-        canvas.save(); canvas.translate(dateX * W, dateY * H); canvas.rotate(dateRot)
-        canvas.drawText(dStr, 0f, -(dPaint.descent() + dPaint.ascent()) / 2f, dPaint)
-        canvas.restore()
-        if (activeElement == ActiveElement.DATE) {
-            val dw = dPaint.measureText(dStr)
+        if (showDate) {
+            val datePx = dateSz * H
+            val dateBaseColor = Color.argb((Color.alpha(clockColor)*0.85f).toInt().coerceIn(0,255),
+                Color.red(clockColor), Color.green(clockColor), Color.blue(clockColor))
+            dPaint.color    = dimmedColor(dateBaseColor, clockDim)
+            dPaint.textSize = datePx
             canvas.save(); canvas.translate(dateX * W, dateY * H); canvas.rotate(dateRot)
-            val r = RectF(-dw/2f-14f*dp, -datePx/2f-10f*dp, dw/2f+14f*dp, datePx/2f+10f*dp)
-            canvas.drawRoundRect(r, 10f*dp, 10f*dp, selGlow)
-            canvas.drawRoundRect(r, 10f*dp, 10f*dp, selDash)
+            canvas.drawText(dStr, 0f, -(dPaint.descent() + dPaint.ascent()) / 2f, dPaint)
             canvas.restore()
+            if (activeElement == ActiveElement.DATE) {
+                val dw = dPaint.measureText(dStr)
+                canvas.save(); canvas.translate(dateX * W, dateY * H); canvas.rotate(dateRot)
+                val r = RectF(-dw/2f-14f*dp, -datePx/2f-10f*dp, dw/2f+14f*dp, datePx/2f+10f*dp)
+                canvas.drawRoundRect(r, 10f*dp, 10f*dp, selGlow)
+                canvas.drawRoundRect(r, 10f*dp, 10f*dp, selDash)
+                canvas.restore()
+            }
         }
 
         // ── Subject ───────────────────────────────────────────────────────────
@@ -211,17 +213,12 @@ class WallpaperEditorView @JvmOverloads constructor(
         scaleDetector.onTouchEvent(e)
         when (e.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
-                // Fresh gesture — clear scale flag
                 scalingInProgress = false
                 pDownX = e.x; pDownY = e.y; dLastX = e.x; dLastY = e.y; isDragging = false
                 return true
             }
-            MotionEvent.ACTION_POINTER_DOWN -> {
-                // Second finger down — cancel any drag
-                isDragging = false; return true
-            }
+            MotionEvent.ACTION_POINTER_DOWN -> { isDragging = false; return true }
             MotionEvent.ACTION_POINTER_UP -> {
-                // One finger lifts during pinch — sync drag origin to remaining finger
                 val remainIdx = if (e.actionIndex == 0) 1 else 0
                 dLastX = e.getX(remainIdx); dLastY = e.getY(remainIdx)
                 return true
@@ -229,7 +226,6 @@ class WallpaperEditorView @JvmOverloads constructor(
             MotionEvent.ACTION_MOVE -> {
                 if (e.pointerCount == 1 && !scaleDetector.isInProgress) {
                     if (scalingInProgress) {
-                        // First MOVE after scale ends — just sync origin, no jump
                         dLastX = e.x; dLastY = e.y
                     } else {
                         if (!isDragging &&
@@ -253,7 +249,6 @@ class WallpaperEditorView @JvmOverloads constructor(
             MotionEvent.ACTION_UP -> {
                 val wasDragging = isDragging; val wasScale = scalingInProgress
                 isDragging = false
-                // Only fire tap if this was a true tap (no drag, no scale)
                 if (!wasDragging && !wasScale && !scaleDetector.isInProgress)
                     handleTap(e.x, e.y)
                 return true
@@ -264,13 +259,19 @@ class WallpaperEditorView @JvmOverloads constructor(
 
     private fun handleTap(x: Float, y: Float) {
         val W = width.toFloat(); val H = height.toFloat(); val dp = resources.displayMetrics.density
-        tPaint.textSize = clockSz * H
-        val tw = clockRefWidth()
-        val clockHit = hitTest(x,y,clockX*W,clockY*H, tw+40f*dp, clockSz*H+30f*dp, clockRot)
-        dPaint.textSize = dateSz * H
-        val dw = dPaint.measureText(fDate.format(Date()))
-        val dateHit  = hitTest(x,y, dateX*W, dateY*H, dw+36f*dp, dateSz*H+24f*dp, dateRot)
-        var subjHit  = false
+        var clockHit = false
+        var dateHit  = false
+        if (showTime) {
+            tPaint.textSize = clockSz * H
+            val tw = clockRefWidth()
+            clockHit = hitTest(x,y,clockX*W,clockY*H, tw+40f*dp, clockSz*H+30f*dp, clockRot)
+        }
+        if (showDate) {
+            dPaint.textSize = dateSz * H
+            val dw = dPaint.measureText(fDate.format(Date()))
+            dateHit = hitTest(x,y, dateX*W, dateY*H, dw+36f*dp, dateSz*H+24f*dp, dateRot)
+        }
+        var subjHit = false
         rawFg?.let { fg ->
             val total = minOf(W/fg.width,H/fg.height)*subjSc
             subjHit = hitTest(x,y,subjX*W,subjY*H,fg.width*total+40f,fg.height*total+40f,subjRot)
