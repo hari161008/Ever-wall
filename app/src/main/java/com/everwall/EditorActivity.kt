@@ -453,6 +453,16 @@ class EditorActivity : AppCompatActivity() {
         b.btnPillSubject.setOnClickListener { switchPanel(Panel.SUBJECT) }
         b.btnChangeBg.setOnClickListener      { reqPerm(true) }
         b.btnChangeSubject.setOnClickListener { reqPerm(false) }
+        b.btnRemoveSubject.setOnClickListener {
+            val fgFile = WallpaperPrefs.getFgFileForSlot(this, editSlot)
+            fgFile.delete()
+            b.editorView.setFg(null)
+            b.btnRemoveSubject.visibility = View.GONE
+            toast("Subject removed")
+        }
+        // Show remove button only if subject is already set
+        val fgExists = WallpaperPrefs.getFgFileForSlot(this, editSlot).exists()
+        b.btnRemoveSubject.visibility = if (fgExists) View.VISIBLE else View.GONE
         b.btnPickFont.setOnClickListener      { pickFont.launch("*/*") }
         showPanel(Panel.TIME)
     }
@@ -502,6 +512,7 @@ class EditorActivity : AppCompatActivity() {
     // ── Panels ────────────────────────────────────────────────────────────────
     private fun setupPanels() {
         b.switchAutoHide.isChecked  = WallpaperPrefs.getAutoHide(this)
+        b.switchAutoHideDate.isChecked = WallpaperPrefs.getAutoHide(this)
         b.switchShowTime.isChecked  = WallpaperPrefs.loadSlot(this, editSlot).showTime
         b.switchShowDate.isChecked  = WallpaperPrefs.loadSlot(this, editSlot).showDate
 
@@ -517,7 +528,14 @@ class EditorActivity : AppCompatActivity() {
         b.sliderDateDim.addOnChangeListener { _, v, _ -> b.tvDateDimVal.text = "${v.toInt()}%"; b.editorView.clockDim  = v / 100f }
         b.switch24hr.setOnCheckedChangeListener    { _, c -> b.editorView.use24hr     = c }
         b.switchSeconds.setOnCheckedChangeListener { _, c -> b.editorView.showSeconds = c }
-        b.switchAutoHide.setOnCheckedChangeListener { _, v -> WallpaperPrefs.setAutoHide(this, v) }
+        b.switchAutoHide.setOnCheckedChangeListener { _, v ->
+            WallpaperPrefs.setAutoHide(this, v)
+            b.switchAutoHideDate.isChecked = v
+        }
+        b.switchAutoHideDate.setOnCheckedChangeListener { _, v ->
+            WallpaperPrefs.setAutoHide(this, v)
+            b.switchAutoHide.isChecked = v
+        }
         b.switchShowTime.setOnCheckedChangeListener { _, c -> b.editorView.showTime = c; b.editorView.invalidate() }
         b.switchShowDate.setOnCheckedChangeListener { _, c -> b.editorView.showDate = c; b.editorView.invalidate() }
 
@@ -607,6 +625,7 @@ class EditorActivity : AppCompatActivity() {
             if (isFirstTime) WallpaperPrefs.saveToSlot(this, editSlot,
                 WallpaperPrefs.loadSlot(this, editSlot).copy(clockX=WallpaperPrefs.DEF_CLK_X, clockY=WallpaperPrefs.DEF_CLK_Y, subjX=WallpaperPrefs.DEF_SUBJ_X, subjY=WallpaperPrefs.DEF_SUBJ_Y))
             if (isBg) loadedBgBmp = sc
+            if (!isBg) b.btnRemoveSubject.visibility = View.VISIBLE
             b.previewCard.animate().alpha(0.3f).setDuration(100).withEndAction {
                 loadSlotIntoEditor(editSlot)
                 b.previewCard.animate().alpha(1f).setDuration(260).setInterpolator(DecelerateInterpolator()).start()
@@ -756,12 +775,19 @@ class EditorActivity : AppCompatActivity() {
         mb.switchMusicArt.setOnCheckedChangeListener { _, checked ->
             WallpaperPrefs.setMusicArtEnabled(this, checked)
             updateMusicArtButtonTint(checked)
-            // If disabling, clear any cached art so wallpaper reverts immediately
             if (!checked) {
                 WallpaperPrefs.getMusicArtFile(this).delete()
                 LocalBroadcastManager.getInstance(this)
                     .sendBroadcast(Intent(WallpaperPrefs.ACTION_MUSIC_ART_CHANGED))
             }
+        }
+
+        val savedDim = (WallpaperPrefs.getMusicArtDim(this) * 100f).toInt()
+        mb.sliderMusicArtDim.value = savedDim.toFloat()
+        mb.tvMusicArtDimVal.text = "$savedDim%"
+        mb.sliderMusicArtDim.addOnChangeListener { _, v, _ ->
+            mb.tvMusicArtDimVal.text = "${v.toInt()}%"
+            WallpaperPrefs.setMusicArtDim(this, v / 100f)
         }
 
         if (granted) {

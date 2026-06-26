@@ -188,5 +188,7 @@ object WallpaperPrefs {
 
     fun getMusicArtEnabled(ctx: Context) = metaPrefs(ctx).getBoolean("music_art_enabled", false)
     fun setMusicArtEnabled(ctx: Context, v: Boolean) = metaPrefs(ctx).edit().putBoolean("music_art_enabled", v).apply()
+    fun getMusicArtDim(ctx: Context) = metaPrefs(ctx).getFloat("music_art_dim", 0f)
+    fun setMusicArtDim(ctx: Context, v: Float) = metaPrefs(ctx).edit().putFloat("music_art_dim", v).apply()
     fun getMusicArtFile(ctx: Context) = java.io.File(ctx.filesDir, FILE_MUSIC_ART)
 }
