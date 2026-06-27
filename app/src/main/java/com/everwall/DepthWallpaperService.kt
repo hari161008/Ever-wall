@@ -73,13 +73,16 @@ class DepthWallpaperService : WallpaperService() {
         private var surfW = 0; private var surfH = 0
         private var visible = false
         private var tf: Typeface? = null
+        private var dateTf: Typeface? = null
 
         private var isScreenOff    = false
         private var clockHidden    = false
         private var clockFadeAlpha = 1f
 
         private val f12   = SimpleDateFormat("h:mm",       Locale.getDefault())
+        private val f12p  = SimpleDateFormat("hh:mm",      Locale.getDefault())
         private val f12s  = SimpleDateFormat("h:mm:ss",    Locale.getDefault())
+        private val f12sp = SimpleDateFormat("hh:mm:ss",   Locale.getDefault())
         private val f24   = SimpleDateFormat("HH:mm",      Locale.getDefault())
         private val f24s  = SimpleDateFormat("HH:mm:ss",   Locale.getDefault())
         private val fDate = SimpleDateFormat("EEE, MMM d", Locale.getDefault())
@@ -206,8 +209,10 @@ class DepthWallpaperService : WallpaperService() {
             lastNightMode = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
             val ftF = File(filesDir, WallpaperPrefs.FILE_FONT)
             tf    = if (ftF.exists()) try { Typeface.createFromFile(ftF) } catch (_: Exception) { null } else null
+            val ftFDate = File(filesDir, WallpaperPrefs.FILE_FONT_DATE)
+            dateTf = if (ftFDate.exists()) try { Typeface.createFromFile(ftFDate) } catch (_: Exception) { null } else tf
             tPaint.typeface = tf ?: Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-            dPaint.typeface = tf ?: Typeface.create("sans-serif-light", Typeface.NORMAL)
+            dPaint.typeface = dateTf ?: Typeface.create("sans-serif-light", Typeface.NORMAL)
 
             if (WallpaperPrefs.getAutoHide(this@DepthWallpaperService)) {
                 val km = getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
@@ -337,6 +342,7 @@ class DepthWallpaperService : WallpaperService() {
 
             val p     = WallpaperPrefs.loadSlot(ctx, slot)
             val color = if (p.color == WallpaperPrefs.NO_COLOR) Color.WHITE else p.color
+            val dateColor = if (p.dateColor == WallpaperPrefs.NO_COLOR) color else p.dateColor
 
             canvas.drawColor(Color.BLACK)
 
@@ -409,16 +415,28 @@ class DepthWallpaperService : WallpaperService() {
                     tPaint.textSize = p.clockSz * H
                     tPaint.typeface = tf ?: Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
                     canvas.save(); canvas.translate(p.clockX * W, p.clockY * H); canvas.rotate(p.clockRot)
-                    canvas.drawText(tStr(p, Date()), 0f, -(tPaint.descent() + tPaint.ascent()) / 2f, tPaint)
+                    if (p.verticalClock) {
+                        val now       = Date()
+                        val hourStr   = if (p.use24) java.text.SimpleDateFormat("HH", java.util.Locale.getDefault()).format(now)
+                                        else if (p.zeroPad) java.text.SimpleDateFormat("hh", java.util.Locale.getDefault()).format(now)
+                                        else         java.text.SimpleDateFormat("h",  java.util.Locale.getDefault()).format(now)
+                        val minSuffix = if (p.secs)  java.text.SimpleDateFormat("mm:ss", java.util.Locale.getDefault()).format(now)
+                                        else          java.text.SimpleDateFormat("mm",    java.util.Locale.getDefault()).format(now)
+                        val lineH = tPaint.textSize * 1.05f
+                        canvas.drawText(hourStr,   0f, -lineH / 2f - (tPaint.descent() + tPaint.ascent()) / 2f, tPaint)
+                        canvas.drawText(minSuffix, 0f,  lineH / 2f - (tPaint.descent() + tPaint.ascent()) / 2f, tPaint)
+                    } else {
+                        canvas.drawText(tStr(p, Date()), 0f, -(tPaint.descent() + tPaint.ascent()) / 2f, tPaint)
+                    }
                     canvas.restore()
                 }
                 if (p.showDate) {
                     val dateBase = Color.argb(
-                        (Color.alpha(color) * 0.85f).toInt().coerceIn(0, 255),
-                        Color.red(color), Color.green(color), Color.blue(color))
+                        (Color.alpha(dateColor) * 0.85f).toInt().coerceIn(0, 255),
+                        Color.red(dateColor), Color.green(dateColor), Color.blue(dateColor))
                     dPaint.color    = dimmedColor(dateBase, p.clkDim, effectiveClockAlpha)
                     dPaint.textSize = p.dateSz * H
-                    dPaint.typeface = tf ?: Typeface.create("sans-serif-light", Typeface.NORMAL)
+                    dPaint.typeface = dateTf ?: Typeface.create("sans-serif-light", Typeface.NORMAL)
                     canvas.save(); canvas.translate(p.dateX * W, p.dateY * H); canvas.rotate(p.dateRot)
                     canvas.drawText(fDate.format(Date()), 0f, -(dPaint.descent() + dPaint.ascent()) / 2f, dPaint)
                     canvas.restore()
@@ -446,7 +464,8 @@ class DepthWallpaperService : WallpaperService() {
 
         private fun tStr(p: WallpaperPrefs.WallPrefs, now: Date) = when {
             p.use24 && p.secs -> f24s.format(now); p.use24 -> f24.format(now)
-            p.secs            -> f12s.format(now); else     -> f12.format(now)
+            p.secs && p.zeroPad -> f12sp.format(now); p.secs -> f12s.format(now)
+            p.zeroPad -> f12p.format(now); else -> f12.format(now)
         }
 
         private fun decode(f: File, max: Int): Bitmap? {

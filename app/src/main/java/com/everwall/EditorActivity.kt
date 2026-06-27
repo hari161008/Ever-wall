@@ -30,6 +30,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.color.DynamicColors
@@ -39,6 +40,9 @@ import com.everwall.databinding.DialogAboutBinding
 import com.everwall.databinding.DialogMusicArtBinding
 import com.everwall.databinding.DialogWelcomeBinding
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
 import java.util.Locale
@@ -51,16 +55,20 @@ class EditorActivity : AppCompatActivity() {
     private enum class Panel { BACKGROUND, TIME, DATE, SUBJECT }
     private var panel = Panel.TIME
     private var clockColor = Color.WHITE
+    private var dateColor = Color.WHITE
+    private var colorAtPickOpen = Color.WHITE
+    private var dateColorAtPickOpen = Color.WHITE
     private var loadedBgBmp: Bitmap? = null
     private lateinit var bsb: LockableBottomSheetBehavior<android.widget.LinearLayout>
-    private var sheetLocked = false
+    private var sheetLocked = true
 
     private var wallpaperMode = WallpaperPrefs.MODE_NONE
     private var editSlot      = WallpaperPrefs.EDIT_NONE
+    private var fontPickIsDate = false
 
     private val pickBg   = registerForActivityResult(ActivityResultContracts.OpenDocument()) { it?.let { u -> replaceImg(u, true) } }
     private val pickFg   = registerForActivityResult(ActivityResultContracts.OpenDocument()) { it?.let { u -> replaceImg(u, false) } }
-    private val pickFont = registerForActivityResult(ActivityResultContracts.GetContent()) { it?.let { u -> onFont(u) } }
+    private val pickFont = registerForActivityResult(ActivityResultContracts.GetContent()) { it?.let { u -> onFont(u, fontPickIsDate) } }
     private val perm     = registerForActivityResult(ActivityResultContracts.RequestPermission()) { if (!it) toast("Storage permission required.") }
 
     companion object {
@@ -99,9 +107,15 @@ class EditorActivity : AppCompatActivity() {
         ViewCompat.setOnApplyWindowInsetsListener(b.root) { _, insets ->
             val bars    = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             val dp      = resources.displayMetrics.density
-            val base    = (72 * dp).toInt()
+            val base    = (80 * dp).toInt()
             val bannerH = base + bars.top
-            b.toolbarContainer.setPadding(0, bars.top, 0, 0)
+            // Pad only the title/icon row below the status bar — the banner
+            // FrameLayout itself stays unpadded so its decorative shapes are
+            // free to extend all the way to its true top edge (y=0) and
+            // bleed behind the status bar instead of stopping short of it.
+            b.toolbarContentRow.setPadding(
+                b.toolbarContentRow.paddingLeft, bars.top,
+                b.toolbarContentRow.paddingRight, 0)
             val lp = b.toolbarContainer.layoutParams; lp.height = bannerH; b.toolbarContainer.layoutParams = lp
             val plp = b.previewContainer.layoutParams as androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams
             plp.topMargin = 0; b.previewContainer.layoutParams = plp
@@ -127,22 +141,7 @@ class EditorActivity : AppCompatActivity() {
         b.btnReset.setOnClickListener        { showResetDialog() }
         b.btnLock.setOnClickListener {
             sheetLocked = !sheetLocked
-            bsb.locked = sheetLocked
-            b.ivLock.setImageResource(if (sheetLocked) R.drawable.ic_lock else R.drawable.ic_lock_open)
-            val circleTint = if (sheetLocked) attr(com.google.android.material.R.attr.colorSecondaryContainer) else 0x1AFFFFFF.toInt()
-            b.btnLock.background = android.graphics.drawable.GradientDrawable().also { gd ->
-                gd.shape = android.graphics.drawable.GradientDrawable.OVAL; gd.setColor(circleTint)
-            }
-            val iconTint = if (sheetLocked) attr(com.google.android.material.R.attr.colorOnSecondaryContainer)
-                           else attr(com.google.android.material.R.attr.colorOnSurfaceVariant)
-            b.ivLock.setColorFilter(iconTint)
-            val lp = b.panelsScroll.layoutParams as android.widget.LinearLayout.LayoutParams
-            if (sheetLocked) {
-                val dp = resources.displayMetrics.density
-                val visH = ((PEEK_HEIGHT_DP - 52f) * dp).toInt()
-                lp.height = visH; lp.weight = 0f
-            } else { lp.height = 0; lp.weight = 1f }
-            b.panelsScroll.layoutParams = lp
+            applyLockState()
         }
 
         val dp = resources.displayMetrics.density
@@ -153,11 +152,14 @@ class EditorActivity : AppCompatActivity() {
                 }
             }
             b.controlsRoot.clipToOutline = true
+            // Apply default locked state once views are laid out
+            applyLockState()
         }
         animateEntrance()
         b.btnSettings.setOnClickListener { showAboutDialog() }
         b.btnMusicArt.setOnClickListener { showMusicArtDialog() }
         showWelcomeIfFirstLaunch()
+        autoCheckForUpdates()
     }
 
     override fun onPause() { save(); super.onPause() }
@@ -254,7 +256,7 @@ class EditorActivity : AppCompatActivity() {
         if (wallpaperMode == WallpaperPrefs.MODE_DAY_NIGHT) {
             val daySet = WallpaperPrefs.getDayMins(this) >= 0; val nightSet = WallpaperPrefs.getNightMins(this) >= 0; val both = daySet && nightSet
             b.btnSetWallpaper.isEnabled = both
-            b.btnSetWallpaper.text = when { !daySet && !nightSet -> "Set Day & Night"; !daySet -> "Set Day Time"; !nightSet -> "Set Night Time"; else -> "Set Live" }
+            b.btnSetWallpaper.text = when { !daySet && !nightSet -> "Set Live"; !daySet -> "Set Day Time"; !nightSet -> "Set Night Time"; else -> "Set Live" }
         } else { b.btnSetWallpaper.isEnabled = true; b.btnSetWallpaper.text = "Set Live" }
     }
 
@@ -267,6 +269,7 @@ class EditorActivity : AppCompatActivity() {
         val fgBmp = if (fgF.exists()) BitmapFactory.decodeFile(fgF.absolutePath) else null
         loadedBgBmp = bgBmp
         clockColor = if (p.color != WallpaperPrefs.NO_COLOR) p.color else Color.WHITE
+        dateColor  = if (p.dateColor != WallpaperPrefs.NO_COLOR) p.dateColor else clockColor
         with(b.editorView) {
             clockX=p.clockX; clockY=p.clockY; clockSz=p.clockSz; clockRot=p.clockRot
             dateX=p.dateX;   dateY=p.dateY;   dateSz=p.dateSz;   dateRot=p.dateRot
@@ -274,8 +277,10 @@ class EditorActivity : AppCompatActivity() {
             bgRot=p.bgRot;   use24hr=p.use24; showSeconds=p.secs
             bgDim=p.bgDim;   clockDim=p.clkDim; subjDim=p.subjDim
             bgSat=p.bgSat;   subjSat=p.subjSat
-            showTime=p.showTime; showDate=p.showDate
+            showTime=p.showTime; showDate=p.showDate; verticalClock=p.verticalClock
+            zeroPad=p.zeroPad
             this.clockColor = this@EditorActivity.clockColor
+            this.dateColor  = this@EditorActivity.dateColor
             setBg(bgBmp); setFg(fgBmp)
         }
         syncSlidersFromEditor()
@@ -297,9 +302,12 @@ class EditorActivity : AppCompatActivity() {
             b.switchSeconds.isChecked = showSeconds
             b.switchShowTime.isChecked = showTime
             b.switchShowDate.isChecked = showDate
+            b.switchVerticalClock.isChecked = verticalClock
+            b.switchZeroPad.isChecked = zeroPad
+            b.rowZeroPad.visibility = if (use24hr) View.GONE else View.VISIBLE
         }
         b.colorPicker.color = clockColor; updateSwatch(clockColor)
-        b.colorPickerDate.color = clockColor; updateDateSwatch(clockColor)
+        b.colorPickerDate.color = dateColor; updateDateSwatch(dateColor)
     }
 
     private fun currentWallPrefs() = with(b.editorView) {
@@ -308,7 +316,9 @@ class EditorActivity : AppCompatActivity() {
             subjX, subjY, subjSc, subjRot, bgRot, clockColor,
             b.switch24hr.isChecked, b.switchSeconds.isChecked,
             bgDim, clockDim, subjDim, bgSat, subjSat,
-            b.switchShowTime.isChecked, b.switchShowDate.isChecked
+            b.switchShowTime.isChecked, b.switchShowDate.isChecked,
+            b.switchVerticalClock.isChecked, b.switchZeroPad.isChecked,
+            dateColor
         )
     }
 
@@ -427,11 +437,14 @@ class EditorActivity : AppCompatActivity() {
         val bgF = WallpaperPrefs.getBgFileForSlot(this, editSlot)
         val fgF = WallpaperPrefs.getFgFileForSlot(this, editSlot)
         val ftF = File(filesDir, WallpaperPrefs.FILE_FONT)
+        val ftFDate = File(filesDir, WallpaperPrefs.FILE_FONT_DATE)
         val bgBmp = if (bgF.exists()) BitmapFactory.decodeFile(bgF.absolutePath) else null
         val fgBmp = if (fgF.exists()) BitmapFactory.decodeFile(fgF.absolutePath) else null
         val tf    = if (ftF.exists()) try { Typeface.createFromFile(ftF) } catch (_: Exception) { null } else null
+        val dateTf = if (ftFDate.exists()) try { Typeface.createFromFile(ftFDate) } catch (_: Exception) { null } else tf
         loadedBgBmp = bgBmp
         clockColor = if (p.color != WallpaperPrefs.NO_COLOR) p.color else Color.WHITE
+        dateColor  = if (p.dateColor != WallpaperPrefs.NO_COLOR) p.dateColor else clockColor
         with(b.editorView) {
             clockX=p.clockX; clockY=p.clockY; clockSz=p.clockSz; clockRot=p.clockRot
             dateX=p.dateX;   dateY=p.dateY;   dateSz=p.dateSz;   dateRot=p.dateRot
@@ -439,17 +452,37 @@ class EditorActivity : AppCompatActivity() {
             bgRot=p.bgRot;   use24hr=p.use24; showSeconds=p.secs
             bgDim=p.bgDim;   clockDim=p.clkDim; subjDim=p.subjDim
             this.clockColor = this@EditorActivity.clockColor
-            showTime=p.showTime; showDate=p.showDate
-            setData(bgBmp, fgBmp, tf)
+            this.dateColor  = this@EditorActivity.dateColor
+            showTime=p.showTime; showDate=p.showDate; verticalClock=p.verticalClock
+            zeroPad=p.zeroPad
+            setData(bgBmp, fgBmp, tf, dateTf)
         }
         applyPreviewBg()
     }
 
     // ── Pills ─────────────────────────────────────────────────────────────────
+    private fun applyLockState() {
+        bsb.locked = sheetLocked
+        b.ivLock.setImageResource(if (sheetLocked) R.drawable.ic_lock else R.drawable.ic_lock_open)
+        val circleTint = if (sheetLocked) attr(com.google.android.material.R.attr.colorSecondaryContainer) else 0x1AFFFFFF.toInt()
+        b.btnLock.background = android.graphics.drawable.GradientDrawable().also { gd ->
+            gd.shape = android.graphics.drawable.GradientDrawable.OVAL; gd.setColor(circleTint)
+        }
+        val iconTint = if (sheetLocked) attr(com.google.android.material.R.attr.colorOnSecondaryContainer)
+                       else attr(com.google.android.material.R.attr.colorOnSurfaceVariant)
+        b.ivLock.setColorFilter(iconTint)
+        val lp = b.panelsScroll.layoutParams as android.widget.LinearLayout.LayoutParams
+        if (sheetLocked) {
+            val dp = resources.displayMetrics.density
+            val visH = ((PEEK_HEIGHT_DP - 52f) * dp).toInt()
+            lp.height = visH; lp.weight = 0f
+        } else { lp.height = 0; lp.weight = 1f }
+        b.panelsScroll.layoutParams = lp
+    }
+
     private fun setupPills() {
         b.btnPillBg.setOnClickListener      { switchPanel(Panel.BACKGROUND) }
-        b.btnPillTime.setOnClickListener    { switchPanel(Panel.TIME) }
-        b.btnPillDate.setOnClickListener    { switchPanel(Panel.DATE) }
+        b.btnPillTime.setOnClickListener    { showTimeDateMenu() }
         b.btnPillSubject.setOnClickListener { switchPanel(Panel.SUBJECT) }
         b.btnChangeBg.setOnClickListener      { reqPerm(true) }
         b.btnChangeSubject.setOnClickListener { reqPerm(false) }
@@ -460,11 +493,40 @@ class EditorActivity : AppCompatActivity() {
             b.btnRemoveSubject.visibility = View.GONE
             toast("Subject removed")
         }
-        // Show remove button only if subject is already set
         val fgExists = WallpaperPrefs.getFgFileForSlot(this, editSlot).exists()
         b.btnRemoveSubject.visibility = if (fgExists) View.VISIBLE else View.GONE
-        b.btnPickFont.setOnClickListener      { pickFont.launch("*/*") }
+        b.btnPickFont.setOnClickListener { fontPickIsDate = false; pickFont.launch("*/*") }
         showPanel(Panel.TIME)
+    }
+
+    private fun showTimeDateMenu() {
+        val themedCtx = android.view.ContextThemeWrapper(this, R.style.EverWallPopupMenuOverlay)
+        val popup = android.widget.PopupMenu(themedCtx, b.btnPillTime)
+        val iconTint = attr(com.google.android.material.R.attr.colorPrimary)
+        val iconTime = ContextCompat.getDrawable(this, R.drawable.ic_clock)?.mutate()?.also {
+            it.setTint(iconTint)
+        }
+        val iconDate = ContextCompat.getDrawable(this, R.drawable.ic_calendar)?.mutate()?.also {
+            it.setTint(iconTint)
+        }
+        popup.menu.add(0, 1, 0, "Time").setIcon(iconTime)
+        popup.menu.add(0, 2, 1, "Date").setIcon(iconDate)
+        try {
+            val mPopup = popup.javaClass.getDeclaredField("mPopup")
+            mPopup.isAccessible = true
+            val menuHelper = mPopup.get(popup)
+            menuHelper.javaClass
+                .getDeclaredMethod("setForceShowIcon", Boolean::class.javaPrimitiveType)
+                .invoke(menuHelper, true)
+        } catch (_: Exception) { /* icons simply won't show on the rare device where this fails */ }
+        popup.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                1 -> switchPanel(Panel.TIME)
+                2 -> switchPanel(Panel.DATE)
+            }
+            true
+        }
+        popup.show()
     }
 
     private fun switchPanel(p: Panel) {
@@ -484,8 +546,7 @@ class EditorActivity : AppCompatActivity() {
         b.panelDate.visibility    = if (p == Panel.DATE)       View.VISIBLE else View.GONE
         b.panelSubject.visibility = if (p == Panel.SUBJECT)    View.VISIBLE else View.GONE
         pill(b.btnPillBg,      p == Panel.BACKGROUND)
-        pill(b.btnPillTime,    p == Panel.TIME)
-        pill(b.btnPillDate,    p == Panel.DATE)
+        pill(b.btnPillTime,    p == Panel.TIME || p == Panel.DATE)
         pill(b.btnPillSubject, p == Panel.SUBJECT)
     }
 
@@ -515,6 +576,9 @@ class EditorActivity : AppCompatActivity() {
         b.switchAutoHideDate.isChecked = WallpaperPrefs.getAutoHide(this)
         b.switchShowTime.isChecked  = WallpaperPrefs.loadSlot(this, editSlot).showTime
         b.switchShowDate.isChecked  = WallpaperPrefs.loadSlot(this, editSlot).showDate
+        b.switchVerticalClock.isChecked = WallpaperPrefs.loadSlot(this, editSlot).verticalClock
+        b.switchZeroPad.isChecked = WallpaperPrefs.loadSlot(this, editSlot).zeroPad
+        b.rowZeroPad.visibility = if (b.switch24hr.isChecked) View.GONE else View.VISIBLE
 
         b.sliderBgRot.addOnChangeListener  { _, v, _ -> b.tvBgRotVal.text  = "${v.toInt()}°"; b.editorView.bgRot    = v }
         b.sliderBgDim.addOnChangeListener  { _, v, _ -> b.tvBgDimVal.text  = "${v.toInt()}%"; b.editorView.bgDim    = v / 100f }
@@ -526,7 +590,10 @@ class EditorActivity : AppCompatActivity() {
         b.sliderBgSat.addOnChangeListener   { _, v, _ -> b.tvBgSatVal.text   = "${v.toInt()}%"; b.editorView.bgSat     = v / 100f }
         b.sliderSubjSat.addOnChangeListener { _, v, _ -> b.tvSubjSatVal.text = "${v.toInt()}%"; b.editorView.subjSat   = v / 100f }
         b.sliderDateDim.addOnChangeListener { _, v, _ -> b.tvDateDimVal.text = "${v.toInt()}%"; b.editorView.clockDim  = v / 100f }
-        b.switch24hr.setOnCheckedChangeListener    { _, c -> b.editorView.use24hr     = c }
+        b.switch24hr.setOnCheckedChangeListener    { _, c ->
+            b.editorView.use24hr = c
+            b.rowZeroPad.visibility = if (c) View.GONE else View.VISIBLE
+        }
         b.switchSeconds.setOnCheckedChangeListener { _, c -> b.editorView.showSeconds = c }
         b.switchAutoHide.setOnCheckedChangeListener { _, v ->
             WallpaperPrefs.setAutoHide(this, v)
@@ -538,40 +605,71 @@ class EditorActivity : AppCompatActivity() {
         }
         b.switchShowTime.setOnCheckedChangeListener { _, c -> b.editorView.showTime = c; b.editorView.invalidate() }
         b.switchShowDate.setOnCheckedChangeListener { _, c -> b.editorView.showDate = c; b.editorView.invalidate() }
+        b.switchVerticalClock.setOnCheckedChangeListener { _, c -> b.editorView.verticalClock = c; b.editorView.invalidate() }
+        b.switchZeroPad.setOnCheckedChangeListener { _, c -> b.editorView.zeroPad = c; b.editorView.invalidate() }
 
         b.chipPickColor.setOnCheckedChangeListener { _, checked ->
             if (checked) {
+                colorAtPickOpen = clockColor
                 b.colorPicker.visibility = View.VISIBLE
                 b.colorPicker.animate().alpha(1f).setDuration(220).setInterpolator(DecelerateInterpolator(1.5f)).start()
             } else {
                 b.colorPicker.animate().alpha(0f).setDuration(160).withEndAction { b.colorPicker.visibility = View.GONE }.start()
+                if (clockColor != colorAtPickOpen) {
+                    val finalColor = clockColor
+                    askApplyToOther(changedIsTime = true, kindLabel = "color") {
+                        dateColor = finalColor; b.editorView.dateColor = finalColor; updateDateSwatch(finalColor)
+                        b.colorPickerDate.color = finalColor
+                    }
+                }
             }
         }
-        b.colorPicker.onColorChanged = { c -> clockColor = c; b.editorView.clockColor = c; updateSwatch(c); updateDateSwatch(c) }
+        b.colorPicker.onColorChanged = { c -> clockColor = c; b.editorView.clockColor = c; updateSwatch(c) }
 
-        // Date panel color picker mirrors the time panel
+        // Date panel color picker — independent from time, offers to sync once picking is done
         b.chipPickColorDate.setOnCheckedChangeListener { _, checked ->
             if (checked) {
+                dateColorAtPickOpen = dateColor
                 b.colorPickerDate.visibility = View.VISIBLE
                 b.colorPickerDate.animate().alpha(1f).setDuration(220).setInterpolator(DecelerateInterpolator(1.5f)).start()
             } else {
                 b.colorPickerDate.animate().alpha(0f).setDuration(160).withEndAction { b.colorPickerDate.visibility = View.GONE }.start()
+                if (dateColor != dateColorAtPickOpen) {
+                    val finalColor = dateColor
+                    askApplyToOther(changedIsTime = false, kindLabel = "color") {
+                        clockColor = finalColor; b.editorView.clockColor = finalColor; updateSwatch(finalColor)
+                        b.colorPicker.color = finalColor
+                    }
+                }
             }
         }
-        b.colorPickerDate.onColorChanged = { c -> clockColor = c; b.editorView.clockColor = c; updateSwatch(c); updateDateSwatch(c) }
-        b.colorPickerDate.color = clockColor
+        b.colorPickerDate.onColorChanged = { c -> dateColor = c; b.editorView.dateColor = c; updateDateSwatch(c) }
+        b.colorPickerDate.color = dateColor
 
-        b.btnPickFontDate.setOnClickListener { pickFont.launch("*/*") }
+        b.btnPickFontDate.setOnClickListener { fontPickIsDate = true; pickFont.launch("*/*") }
 
         val ftF = File(filesDir, WallpaperPrefs.FILE_FONT)
+        val ftFDate = File(filesDir, WallpaperPrefs.FILE_FONT_DATE)
         b.tvFontStatus.text = if (ftF.exists()) ftF.name else "System default"
-        b.tvDateFontStatus.text = if (ftF.exists()) ftF.name else "System default"
+        b.tvDateFontStatus.text = if (ftFDate.exists()) ftFDate.name else if (ftF.exists()) ftF.name else "System default"
 
         b.colorPicker.visibility = View.GONE; b.colorPicker.alpha = 0f
         b.chipPickColor.isChecked = false
         b.colorPickerDate.visibility = View.GONE; b.colorPickerDate.alpha = 0f
         b.chipPickColorDate.isChecked = false
         syncSlidersFromEditor()
+    }
+
+    /** After a font or color change on one of Time/Date, offer to mirror it on the other. */
+    private fun askApplyToOther(changedIsTime: Boolean, kindLabel: String, onApplyToOther: () -> Unit) {
+        val thisLabel  = if (changedIsTime) "Time"  else "Date"
+        val otherLabel = if (changedIsTime) "Date"  else "Time"
+        MaterialAlertDialogBuilder(this)
+            .setTitle("Use the same $kindLabel?")
+            .setMessage("You changed the $kindLabel for $thisLabel. Apply it to $otherLabel as well, or keep them separate?")
+            .setPositiveButton("Apply to $otherLabel") { _, _ -> onApplyToOther() }
+            .setNegativeButton("Keep Separate", null)
+            .show()
     }
 
     private fun updateSwatch(c: Int) {
@@ -593,15 +691,32 @@ class EditorActivity : AppCompatActivity() {
     }
 
     // ── Font ─────────────────────────────────────────────────────────────────
-    private fun onFont(uri: Uri) {
+    private fun onFont(uri: Uri, isDate: Boolean) {
         val name = displayName(uri) ?: uri.lastPathSegment ?: ""
         if (!name.endsWith(".ttf", ignoreCase = true)) { toast("Please select a .ttf file."); return }
-        contentResolver.openInputStream(uri)?.use { inp ->
-            File(filesDir, WallpaperPrefs.FILE_FONT).outputStream().use { inp.copyTo(it) }
+        val destFile = File(filesDir, if (isDate) WallpaperPrefs.FILE_FONT_DATE else WallpaperPrefs.FILE_FONT)
+        contentResolver.openInputStream(uri)?.use { inp -> destFile.outputStream().use { inp.copyTo(it) } }
+        val tf = try { Typeface.createFromFile(destFile) } catch (_: Exception) { null }
+        if (isDate) {
+            WallpaperPrefs.setHasDateFont(this, true)
+            b.editorView.setDateFontOnly(tf); b.tvDateFontStatus.text = name
+        } else {
+            WallpaperPrefs.setHasFont(this, true)
+            b.editorView.setFontOnly(tf); b.tvFontStatus.text = name
         }
-        WallpaperPrefs.setHasFont(this, true)
-        val tf = try { Typeface.createFromFile(File(filesDir, WallpaperPrefs.FILE_FONT)) } catch (_: Exception) { null }
-        b.editorView.setFontOnly(tf); b.tvFontStatus.text = name; b.tvDateFontStatus.text = name; toast("Font applied")
+        toast("Font applied")
+        askApplyToOther(changedIsTime = !isDate, kindLabel = "font") {
+            val otherFile = File(filesDir, if (isDate) WallpaperPrefs.FILE_FONT else WallpaperPrefs.FILE_FONT_DATE)
+            destFile.copyTo(otherFile, overwrite = true)
+            val otherTf = try { Typeface.createFromFile(otherFile) } catch (_: Exception) { null }
+            if (isDate) {
+                WallpaperPrefs.setHasFont(this, true)
+                b.editorView.setFontOnly(otherTf); b.tvFontStatus.text = name
+            } else {
+                WallpaperPrefs.setHasDateFont(this, true)
+                b.editorView.setDateFontOnly(otherTf); b.tvDateFontStatus.text = name
+            }
+        }
     }
 
     // ── Image replacement ─────────────────────────────────────────────────────
@@ -670,7 +785,16 @@ class EditorActivity : AppCompatActivity() {
     private fun showAboutDialog() {
         val dialog = BottomSheetDialog(this)
         val db = DialogAboutBinding.inflate(layoutInflater)
-        try { val pInfo = packageManager.getPackageInfo(packageName, 0); db.tvVersion.text = "Version ${pInfo.versionName}" } catch (_: Exception) {}
+
+        // Version — always from packageInfo (single source: build.gradle)
+        try {
+            val pInfo = packageManager.getPackageInfo(packageName, 0)
+            db.tvVersion.text = "Version ${pInfo.versionName}"
+        } catch (_: Exception) {
+            db.tvVersion.text = "Version ${UpdateChecker.APP_VERSION}"
+        }
+
+        // Theme toggle
         db.toggleTheme.check(when (WallpaperPrefs.getAppTheme(this)) {
             WallpaperPrefs.THEME_LIGHT -> R.id.btn_theme_light
             WallpaperPrefs.THEME_DARK  -> R.id.btn_theme_dark
@@ -678,18 +802,265 @@ class EditorActivity : AppCompatActivity() {
         })
         db.toggleTheme.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (isChecked) {
-                val theme = when (checkedId) { R.id.btn_theme_light -> WallpaperPrefs.THEME_LIGHT; R.id.btn_theme_dark -> WallpaperPrefs.THEME_DARK; else -> WallpaperPrefs.THEME_AUTO }
+                val theme = when (checkedId) {
+                    R.id.btn_theme_light -> WallpaperPrefs.THEME_LIGHT
+                    R.id.btn_theme_dark  -> WallpaperPrefs.THEME_DARK
+                    else                 -> WallpaperPrefs.THEME_AUTO
+                }
                 WallpaperPrefs.setAppTheme(this, theme); applyThemeMode()
             }
         }
+
+        // Background behind preview toggle
         db.swBgBehindPreview.isChecked = WallpaperPrefs.getBgBehindPreview(this)
         db.swBgBehindPreview.setOnCheckedChangeListener { _, v ->
             WallpaperPrefs.setBgBehindPreview(this, v); applyPreviewBg()
             if (wallpaperMode != WallpaperPrefs.MODE_NONE) pillDayNight(editSlot)
         }
+
+        // Auto check updates toggle
+        db.swAutoCheckUpdates.isChecked = WallpaperPrefs.getAutoCheckUpdates(this)
+        db.swAutoCheckUpdates.setOnCheckedChangeListener { _, v ->
+            WallpaperPrefs.setAutoCheckUpdates(this, v)
+        }
+
+        // Check for updates button
+        db.cardCheckUpdates.setOnClickListener {
+            performUpdateCheck(
+                onStatusChange  = { msg -> db.tvUpdateStatus.text = msg },
+                onLoadingChange = { loading ->
+                    db.progressUpdate.visibility = if (loading) View.VISIBLE else View.GONE
+                    db.ivUpdateArrow.visibility  = if (loading) View.GONE else View.VISIBLE
+                    db.cardCheckUpdates.isClickable = !loading
+                }
+            )
+        }
+
         db.cardSupportGroup.setOnClickListener { openUrl("https://t.me/EverlastingAndroidTweak") }
         db.cardAppChannel.setOnClickListener   { openUrl("https://t.me/CoolAppStore") }
         dialog.setContentView(db.root); dialog.show()
+    }
+
+    /**
+     * Core update-check routine shared between the manual button and the auto-startup check.
+     * [onStatusChange] and [onLoadingChange] are UI callbacks invoked on the main thread.
+     * [onUpdateFound] is called (on main thread) when a release is found and before any
+     * download/install action so the caller can show its own prompt; if null the default
+     * behaviour (toast + download) is used.
+     */
+    private fun performUpdateCheck(
+        onStatusChange:  (String) -> Unit = {},
+        onLoadingChange: (Boolean) -> Unit = {},
+        onUpdateFound:   ((UpdateChecker.ReleaseInfo) -> Unit)? = null
+    ) {
+        lifecycleScope.launch {
+            onLoadingChange(true)
+            onStatusChange("Checking for updates…")
+
+            val release = withContext(Dispatchers.IO) {
+                UpdateChecker.checkForUpdate(this@EditorActivity)
+            }
+
+            if (release == null) {
+                onStatusChange("You're up to date")
+                onLoadingChange(false)
+                return@launch
+            }
+
+            // Delegate to custom handler (e.g. startup popup) if provided
+            if (onUpdateFound != null) {
+                onLoadingChange(false)
+                onUpdateFound(release)
+                return@launch
+            }
+
+            // Default: check if already downloaded, else start download
+            val existing = UpdateChecker.getDownloadedApk(release.apkFileName)
+            if (existing != null) {
+                onStatusChange("Update ready — launching installer…")
+                onLoadingChange(false)
+                UpdateChecker.installApk(this@EditorActivity, existing)
+            } else {
+                onStatusChange("Downloading v${release.versionName}…")
+                UpdateChecker.downloadApk(
+                    context     = this@EditorActivity,
+                    apkUrl      = release.apkUrl,
+                    apkFileName = release.apkFileName,
+                    onProgress  = { msg -> runOnUiThread { onStatusChange(msg) } },
+                    onComplete  = { file ->
+                        runOnUiThread {
+                            onLoadingChange(false)
+                            if (file != null) {
+                                onStatusChange("Download complete — launching installer…")
+                                UpdateChecker.installApk(this@EditorActivity, file)
+                            } else {
+                                onStatusChange("Download failed. Please try again.")
+                            }
+                        }
+                    }
+                )
+            }
+        }
+    }
+
+    /** Auto-checks for updates at app startup and shows a floating popup if one is found. */
+    private fun autoCheckForUpdates() {
+        if (!WallpaperPrefs.getAutoCheckUpdates(this)) return
+        lifecycleScope.launch {
+            // Small delay so the UI settles first
+            kotlinx.coroutines.delay(1500)
+            performUpdateCheck(
+                onUpdateFound = { release -> showUpdatePopup(release) }
+            )
+        }
+    }
+
+    /** Shows a modern bottom-sheet popup asking the user to download the available update. */
+    private fun showUpdatePopup(release: UpdateChecker.ReleaseInfo) {
+        if (isFinishing || isDestroyed) return
+        val dialog = BottomSheetDialog(this)
+        val dp = resources.displayMetrics.density
+        val root = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding((24 * dp).toInt(), (24 * dp).toInt(), (24 * dp).toInt(), (32 * dp).toInt())
+        }
+
+        // Icon + title row
+        val header = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+        }
+        val iconFrame = FrameLayout(this).apply {
+            val sz = (44 * dp).toInt()
+            layoutParams = android.widget.LinearLayout.LayoutParams(sz, sz).also {
+                it.marginEnd = (14 * dp).toInt()
+            }
+            background = ContextCompat.getDrawable(this@EditorActivity, R.drawable.bg_icon_circle_primary)
+            backgroundTintList = android.content.res.ColorStateList.valueOf(
+                attr(com.google.android.material.R.attr.colorPrimaryContainer))
+        }
+        val icon = android.widget.ImageView(this).apply {
+            val sz = (22 * dp).toInt()
+            layoutParams = FrameLayout.LayoutParams(sz, sz, android.view.Gravity.CENTER)
+            setImageResource(R.drawable.ic_cloud)
+            imageTintList = android.content.res.ColorStateList.valueOf(
+                attr(com.google.android.material.R.attr.colorOnPrimaryContainer))
+        }
+        iconFrame.addView(icon)
+        header.addView(iconFrame)
+
+        val titleBlock = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            layoutParams = android.widget.LinearLayout.LayoutParams(0,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        val tvTitle = android.widget.TextView(this).apply {
+            text = "Update Available"
+            textSize = 17f
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            setTextColor(attr(com.google.android.material.R.attr.colorOnSurface))
+        }
+        val tvSub = android.widget.TextView(this).apply {
+            text = "Ever Wall ${release.versionName} is ready to install"
+            textSize = 13f
+            setTextColor(attr(com.google.android.material.R.attr.colorOnSurfaceVariant))
+            setPadding(0, (2 * dp).toInt(), 0, 0)
+        }
+        titleBlock.addView(tvTitle); titleBlock.addView(tvSub)
+        header.addView(titleBlock)
+        root.addView(header)
+
+        // Status message
+        val tvStatus = android.widget.TextView(this).apply {
+            text = ""
+            textSize = 12f
+            setTextColor(attr(com.google.android.material.R.attr.colorOnSurfaceVariant))
+            setPadding(0, (10 * dp).toInt(), 0, 0)
+            visibility = View.GONE
+        }
+        root.addView(tvStatus)
+
+        // Progress bar
+        val progressBar = android.widget.ProgressBar(this).apply {
+            layoutParams = android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT, (4 * dp).toInt()).also {
+                it.topMargin = (12 * dp).toInt()
+            }
+            isIndeterminate = true
+            visibility = View.GONE
+        }
+        root.addView(progressBar)
+
+        // Buttons row
+        val btnRow = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.END
+            layoutParams = android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT).also {
+                it.topMargin = (20 * dp).toInt()
+            }
+        }
+
+        val btnCancel = com.google.android.material.button.MaterialButton(
+            this, null, com.google.android.material.R.attr.borderlessButtonStyle).apply {
+            text = "Not Now"
+            layoutParams = android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT).also {
+                it.marginEnd = (8 * dp).toInt()
+            }
+            setOnClickListener { dialog.dismiss() }
+        }
+
+        val btnDownload = com.google.android.material.button.MaterialButton(this).apply {
+            text = "Download & Install"
+            setOnClickListener {
+                isEnabled = false; btnCancel.isEnabled = false
+                tvStatus.visibility = View.VISIBLE
+                progressBar.visibility = View.VISIBLE
+
+                val existing = UpdateChecker.getDownloadedApk(release.apkFileName)
+                if (existing != null) {
+                    tvStatus.text = "Launching installer…"
+                    progressBar.visibility = View.GONE
+                    UpdateChecker.installApk(this@EditorActivity, existing)
+                    dialog.dismiss()
+                } else {
+                    tvStatus.text = "Downloading v${release.versionName}…"
+                    UpdateChecker.downloadApk(
+                        context     = this@EditorActivity,
+                        apkUrl      = release.apkUrl,
+                        apkFileName = release.apkFileName,
+                        onProgress  = { msg -> runOnUiThread { tvStatus.text = msg } },
+                        onComplete  = { file ->
+                            runOnUiThread {
+                                progressBar.visibility = View.GONE
+                                if (file != null) {
+                                    tvStatus.text = "Download complete — launching installer…"
+                                    UpdateChecker.installApk(this@EditorActivity, file)
+                                    dialog.dismiss()
+                                } else {
+                                    tvStatus.text = "Download failed. Please try again."
+                                    isEnabled = true; btnCancel.isEnabled = true
+                                }
+                            }
+                        }
+                    )
+                }
+            }
+        }
+
+        btnRow.addView(btnCancel); btnRow.addView(btnDownload)
+        root.addView(btnRow)
+
+        // Animate popup in
+        root.alpha = 0f
+        root.animate().alpha(1f).setDuration(280)
+            .setInterpolator(DecelerateInterpolator(2f)).start()
+
+        dialog.setContentView(root)
+        dialog.show()
     }
 
     private fun applyThemeMode() {
@@ -710,6 +1081,7 @@ class EditorActivity : AppCompatActivity() {
         val onPrimary     = attr(com.google.android.material.R.attr.colorOnPrimary)
         bannerDrawable.setFillColor(primaryCont)
         b.tvAppTitle.setTextColor(onPrimaryCont)
+        b.tvAppSubtitle.setTextColor(onPrimaryCont)
         b.btnSettings.backgroundTintList = android.content.res.ColorStateList.valueOf(primary)
         b.ivSettingsIcon.imageTintList   = android.content.res.ColorStateList.valueOf(onPrimary)
         controller.isAppearanceLightStatusBars = !isNight

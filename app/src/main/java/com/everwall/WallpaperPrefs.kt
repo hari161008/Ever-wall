@@ -6,6 +6,7 @@ object WallpaperPrefs {
     const val FILE_ORIGINAL   = "ew_original.png"
     const val FILE_FOREGROUND = "ew_foreground.png"
     const val FILE_FONT       = "ew_font.ttf"
+    const val FILE_FONT_DATE  = "ew_font_date.ttf"
     const val NO_COLOR        = Int.MIN_VALUE
 
     private const val PREFS        = "everwall_prefs"
@@ -17,8 +18,10 @@ object WallpaperPrefs {
     private const val KEY_SUBJ_SC  = "subj_sc";  private const val KEY_SUBJ_ROT  = "subj_rot"
     private const val KEY_BG_ROT   = "bg_rot"
     private const val KEY_COLOR    = "clk_color"
+    private const val KEY_DATE_COLOR = "date_color"
     private const val KEY_USE24    = "use_24hr";  private const val KEY_SECS     = "show_secs"
     private const val KEY_FONT     = "has_font"
+    private const val KEY_DATE_FONT = "has_date_font"
     private const val KEY_SURF_W   = "surface_w"; private const val KEY_SURF_H  = "surface_h"
     private const val KEY_BG_DIM   = "bg_dim"
     private const val KEY_CLK_DIM  = "clk_dim"
@@ -28,6 +31,8 @@ object WallpaperPrefs {
     private const val KEY_AUTO_HIDE = "auto_hide_lock"
     private const val KEY_SHOW_TIME = "show_time"
     private const val KEY_SHOW_DATE = "show_date"
+    private const val KEY_VERT_CLK  = "vert_clock"
+    private const val KEY_ZERO_PAD  = "zero_pad_hour"
 
     // Default element positions / sizes
     const val DEF_CLK_X   = 0.5f;  const val DEF_CLK_Y   = 0.28f
@@ -50,6 +55,8 @@ object WallpaperPrefs {
     fun setSurfaceSize(ctx: Context, w: Int, h: Int) =
         prefs(ctx).edit().putInt(KEY_SURF_W, w).putInt(KEY_SURF_H, h).apply()
     fun setHasFont(ctx: Context, v: Boolean) = prefs(ctx).edit().putBoolean(KEY_FONT, v).apply()
+    fun setHasDateFont(ctx: Context, v: Boolean) = prefs(ctx).edit().putBoolean(KEY_DATE_FONT, v).apply()
+    fun hasDateFont(ctx: Context)  = prefs(ctx).getBoolean(KEY_DATE_FONT, false)
 
     fun getSurfaceW(ctx: Context)  = prefs(ctx).getInt(KEY_SURF_W, 0)
     fun getSurfaceH(ctx: Context)  = prefs(ctx).getInt(KEY_SURF_H, 0)
@@ -142,7 +149,9 @@ object WallpaperPrefs {
         val bgRot: Float,  val color: Int,    val use24: Boolean, val secs: Boolean,
         val bgDim: Float,  val clkDim: Float, val subjDim: Float,
         val bgSat: Float = 1f, val subjSat: Float = 1f,
-        val showTime: Boolean = true, val showDate: Boolean = true
+        val showTime: Boolean = true, val showDate: Boolean = true,
+        val verticalClock: Boolean = false, val zeroPad: Boolean = true,
+        val dateColor: Int = NO_COLOR
     )
 
     fun loadSlot(ctx: Context, slot: Int): WallPrefs {
@@ -159,7 +168,9 @@ object WallpaperPrefs {
             sp.getBoolean(KEY_USE24, false), sp.getBoolean(KEY_SECS, false),
             sp.getFloat(KEY_BG_DIM, 0f), sp.getFloat(KEY_CLK_DIM, 0f), sp.getFloat(KEY_SUBJ_DIM, 0f),
             sp.getFloat(KEY_BG_SAT, 1f), sp.getFloat(KEY_SUBJ_SAT, 1f),
-            sp.getBoolean(KEY_SHOW_TIME, true), sp.getBoolean(KEY_SHOW_DATE, true)
+            sp.getBoolean(KEY_SHOW_TIME, true), sp.getBoolean(KEY_SHOW_DATE, true),
+            sp.getBoolean(KEY_VERT_CLK, false), sp.getBoolean(KEY_ZERO_PAD, true),
+            sp.getInt(KEY_DATE_COLOR, NO_COLOR)
         )
     }
 
@@ -178,6 +189,9 @@ object WallpaperPrefs {
             e.putFloat(KEY_SUBJ_DIM, p.subjDim)
             e.putFloat(KEY_BG_SAT, p.bgSat);   e.putFloat(KEY_SUBJ_SAT, p.subjSat)
             e.putBoolean(KEY_SHOW_TIME, p.showTime); e.putBoolean(KEY_SHOW_DATE, p.showDate)
+            e.putBoolean(KEY_VERT_CLK, p.verticalClock)
+            e.putBoolean(KEY_ZERO_PAD, p.zeroPad)
+            e.putInt(KEY_DATE_COLOR, p.dateColor)
         }.apply()
 
     private fun prefs(ctx: Context) = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -185,6 +199,9 @@ object WallpaperPrefs {
     // ── Music Art ─────────────────────────────────────────────────────────────
     const val FILE_MUSIC_ART = "ew_music_art.png"
     const val ACTION_MUSIC_ART_CHANGED = "com.everwall.MUSIC_ART_CHANGED"
+
+    fun getAutoCheckUpdates(ctx: Context) = metaPrefs(ctx).getBoolean("auto_check_updates", true)
+    fun setAutoCheckUpdates(ctx: Context, v: Boolean) = metaPrefs(ctx).edit().putBoolean("auto_check_updates", v).apply()
 
     fun getMusicArtEnabled(ctx: Context) = metaPrefs(ctx).getBoolean("music_art_enabled", false)
     fun setMusicArtEnabled(ctx: Context, v: Boolean) = metaPrefs(ctx).edit().putBoolean("music_art_enabled", v).apply()

@@ -31,6 +31,11 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <!-- Prevent the OS from drawing its own auto-contrast scrim over the
+             status/nav bars — that scrim is what breaks the seamless look
+             between our banner/background and the system bars. -->
+        <item name="android:enforceStatusBarContrast">false</item>
+        <item name="android:enforceNavigationBarContrast">false</item>
     </style>
 
     <style name="Theme.EverWall.Editor" parent="Theme.EverWall">

@@ -11,6 +11,7 @@ class ColorPickerView @JvmOverloads constructor(
 ) : View(context, attrs) {
 
     var onColorChanged: ((Int) -> Unit)? = null
+    var onColorCommitted: ((Int) -> Unit)? = null
 
     private val hsv = floatArrayOf(0f, 1f, 1f)
 
@@ -122,6 +123,7 @@ class ColorPickerView @JvmOverloads constructor(
                     hueRect.contains(e.x, e.y) -> Zone.HUE
                     else -> Zone.NONE
                 }
+                if (zone != Zone.NONE) parent?.requestDisallowInterceptTouchEvent(true)
             }
         }
         if (zone == Zone.NONE) return false
@@ -137,6 +139,10 @@ class ColorPickerView @JvmOverloads constructor(
             else -> {}
         }
         onColorChanged?.invoke(color)
+        if (e.actionMasked == MotionEvent.ACTION_UP || e.actionMasked == MotionEvent.ACTION_CANCEL) {
+            onColorCommitted?.invoke(color)
+            parent?.requestDisallowInterceptTouchEvent(false)
+        }
         invalidate()
         return true
     }

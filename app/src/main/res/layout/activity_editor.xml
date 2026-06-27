@@ -422,7 +422,7 @@
         android:id="@+id/toolbar_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:minHeight="72dp"
+        android:minHeight="80dp"
         android:layout_gravity="top"
         android:clipChildren="true"
         android:clipToPadding="true">
@@ -473,8 +473,34 @@
             android:tag="toolbar_deco"
             android:alpha="0.13" />
 
-        <!-- Content row -->
+        <!-- Small ring — tucked behind the settings button -->
+        <View
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:layout_gravity="center_vertical|end"
+            android:layout_marginEnd="58dp"
+            android:background="@drawable/bg_about_deco_ring"
+            android:backgroundTint="?attr/colorOnPrimaryContainer"
+            android:tag="toolbar_deco"
+            android:alpha="0.10" />
+
+        <!-- Tiny accent dot — near the title -->
+        <View
+            android:layout_width="9dp"
+            android:layout_height="9dp"
+            android:layout_gravity="top|start"
+            android:layout_marginTop="18dp"
+            android:layout_marginStart="4dp"
+            android:background="@drawable/bg_about_deco_circle"
+            android:backgroundTint="?attr/colorOnPrimaryContainer"
+            android:tag="toolbar_deco"
+            android:alpha="0.15" />
+
+        <!-- Content row — only THIS gets pushed below the status bar;
+             the decorative shapes above stay anchored to the banner's
+             true top edge so they bleed seamlessly behind the status bar -->
         <LinearLayout
+            android:id="@+id/toolbar_content_row"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="horizontal"
@@ -482,16 +508,35 @@
             android:paddingStart="20dp"
             android:paddingEnd="12dp">
 
-            <TextView
-                android:id="@+id/tv_app_title"
+            <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="✦  Ever Wall"
-                android:textColor="?attr/colorOnPrimaryContainer"
-                android:textSize="18sp"
-                android:fontFamily="sans-serif-medium"
-                android:letterSpacing="0.02" />
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tv_app_title"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="✦  Ever Wall"
+                    android:textColor="?attr/colorOnPrimaryContainer"
+                    android:textSize="18sp"
+                    android:fontFamily="sans-serif-medium"
+                    android:letterSpacing="0.02" />
+
+                <TextView
+                    android:id="@+id/tv_app_subtitle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:text="Live Wallpaper Studio"
+                    android:textColor="?attr/colorOnPrimaryContainer"
+                    android:textSize="11sp"
+                    android:alpha="0.65"
+                    android:fontFamily="sans-serif"
+                    android:letterSpacing="0.03" />
+
+            </LinearLayout>
 
             <FrameLayout
                 android:id="@+id/btn_settings"
@@ -673,88 +718,66 @@
                         android:id="@+id/btn_pill_bg"
                         style="@style/Widget.Material3.Button.OutlinedButton"
                         android:layout_width="0dp"
-                        android:layout_height="44dp"
+                        android:layout_height="46dp"
                         android:layout_weight="1"
-                        android:text="BG"
-                        android:textSize="12sp"
+                        android:text="Background"
+                        android:textSize="13sp"
                         android:textAllCaps="false"
                         android:insetTop="0dp"
                         android:insetBottom="0dp"
                         android:paddingStart="0dp"
                         android:paddingEnd="0dp"
                         android:layout_marginEnd="5dp"
-                        app:cornerRadius="22dp"
+                        app:cornerRadius="23dp"
                         app:strokeWidth="1.5dp"
                         app:strokeColor="?attr/colorOutline"
                         app:icon="@drawable/ic_add_photo"
                         app:iconSize="18dp"
                         app:iconGravity="textStart"
-                        app:iconPadding="5dp" />
+                        app:iconPadding="4dp" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_pill_time"
                         style="@style/Widget.Material3.Button.OutlinedButton"
                         android:layout_width="0dp"
-                        android:layout_height="44dp"
+                        android:layout_height="46dp"
                         android:layout_weight="1"
-                        android:text="Time"
-                        android:textSize="12sp"
+                        android:text="Time &amp; Date"
+                        android:textSize="13sp"
                         android:textAllCaps="false"
                         android:insetTop="0dp"
                         android:insetBottom="0dp"
                         android:paddingStart="0dp"
                         android:paddingEnd="0dp"
                         android:layout_marginEnd="5dp"
-                        app:cornerRadius="22dp"
+                        app:cornerRadius="23dp"
                         app:strokeWidth="1.5dp"
                         app:strokeColor="?attr/colorOutline"
                         app:icon="@drawable/ic_clock"
                         app:iconSize="18dp"
                         app:iconGravity="textStart"
-                        app:iconPadding="5dp" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btn_pill_date"
-                        style="@style/Widget.Material3.Button.OutlinedButton"
-                        android:layout_width="0dp"
-                        android:layout_height="44dp"
-                        android:layout_weight="1"
-                        android:text="Date"
-                        android:textSize="12sp"
-                        android:textAllCaps="false"
-                        android:insetTop="0dp"
-                        android:insetBottom="0dp"
-                        android:paddingStart="0dp"
-                        android:paddingEnd="0dp"
-                        android:layout_marginEnd="5dp"
-                        app:cornerRadius="22dp"
-                        app:strokeWidth="1.5dp"
-                        app:strokeColor="?attr/colorOutline"
-                        app:icon="@drawable/ic_calendar"
-                        app:iconSize="18dp"
-                        app:iconGravity="textStart"
-                        app:iconPadding="5dp" />
+                        app:iconPadding="4dp" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_pill_subject"
                         style="@style/Widget.Material3.Button.OutlinedButton"
                         android:layout_width="0dp"
-                        android:layout_height="44dp"
+                        android:layout_height="46dp"
                         android:layout_weight="1"
-                        android:text="Subj"
-                        android:textSize="12sp"
+                        android:text="Subject"
+                        android:textSize="13sp"
                         android:textAllCaps="false"
                         android:insetTop="0dp"
                         android:insetBottom="0dp"
                         android:paddingStart="0dp"
                         android:paddingEnd="0dp"
-                        app:cornerRadius="22dp"
+                        app:cornerRadius="23dp"
                         app:strokeWidth="1.5dp"
                         app:strokeColor="?attr/colorOutline"
                         app:icon="@drawable/ic_layers"
                         app:iconSize="18dp"
                         app:iconGravity="textStart"
-                        app:iconPadding="5dp" />
+                        app:iconPadding="4dp" />
 
                 </LinearLayout>
 
@@ -906,6 +929,17 @@
                         <com.google.android.material.switchmaterial.SwitchMaterial android:id="@+id/switch_24hr"
                             android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="false" />
                     </LinearLayout>
+                    <LinearLayout android:id="@+id/row_zero_pad" android:layout_width="match_parent" android:layout_height="56dp"
+                        android:orientation="horizontal" android:gravity="center_vertical">
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Zero before single digit" android:textAppearance="@style/TextAppearance.Material3.BodyLarge" android:textColor="?attr/colorOnSurface" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Show 09:30 instead of 9:30" android:textAppearance="@style/TextAppearance.Material3.BodySmall" android:textColor="?attr/colorOnSurfaceVariant" />
+                        </LinearLayout>
+                        <com.google.android.material.switchmaterial.SwitchMaterial android:id="@+id/switch_zero_pad"
+                            android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="true" />
+                    </LinearLayout>
                     <LinearLayout android:layout_width="match_parent" android:layout_height="56dp"
                         android:orientation="horizontal" android:gravity="center_vertical">
                         <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
@@ -918,7 +952,7 @@
                             android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="false" />
                     </LinearLayout>
                     <LinearLayout android:layout_width="match_parent" android:layout_height="56dp"
-                        android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="22dp">
+                        android:orientation="horizontal" android:gravity="center_vertical">
                         <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                                 android:text="Auto Hide on Lock Screen" android:textAppearance="@style/TextAppearance.Material3.BodyLarge" android:textColor="?attr/colorOnSurface" />
@@ -926,6 +960,17 @@
                                 android:text="Hide clock when screen is locked" android:textAppearance="@style/TextAppearance.Material3.BodySmall" android:textColor="?attr/colorOnSurfaceVariant" />
                         </LinearLayout>
                         <com.google.android.material.switchmaterial.SwitchMaterial android:id="@+id/switch_auto_hide"
+                            android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="false" />
+                    </LinearLayout>
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="56dp"
+                        android:orientation="horizontal" android:gravity="center_vertical" android:layout_marginBottom="22dp">
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Vertical Layout" android:textAppearance="@style/TextAppearance.Material3.BodyLarge" android:textColor="?attr/colorOnSurface" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Hours on top, minutes below" android:textAppearance="@style/TextAppearance.Material3.BodySmall" android:textColor="?attr/colorOnSurfaceVariant" />
+                        </LinearLayout>
+                        <com.google.android.material.switchmaterial.SwitchMaterial android:id="@+id/switch_vertical_clock"
                             android:layout_width="wrap_content" android:layout_height="wrap_content" android:checked="false" />
                     </LinearLayout>
 
@@ -1078,6 +1123,9 @@
                                 android:lineSpacingExtra="2dp" />
                         </LinearLayout>
                     </com.google.android.material.card.MaterialCardView>
+
+                    <View android:layout_width="match_parent" android:layout_height="1dp"
+                        android:background="?attr/colorOutlineVariant" android:layout_marginBottom="22dp" />
 
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                         android:text="ROTATION" android:textAppearance="@style/TextAppearance.Material3.LabelSmall"

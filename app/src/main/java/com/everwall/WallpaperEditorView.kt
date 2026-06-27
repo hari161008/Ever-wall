@@ -22,9 +22,10 @@ class WallpaperEditorView @JvmOverloads constructor(
     var bgRot  = 0f
     var use24hr = false; var showSeconds = false
     var clockColor = Color.WHITE
+    var dateColor = Color.WHITE
     var bgDim = 0f; var clockDim = 0f; var subjDim = 0f
     var bgSat = 1f;  var subjSat = 1f
-    var showTime = true; var showDate = true
+    var showTime = true; var showDate = true; var verticalClock = false; var zeroPad = true
 
     var activeElement = ActiveElement.NONE
         private set
@@ -32,6 +33,7 @@ class WallpaperEditorView @JvmOverloads constructor(
     private var rawBg: Bitmap? = null
     private var rawFg: Bitmap? = null
     private var tf: Typeface? = null
+    private var dateTf: Typeface? = null
 
     // Touch state
     private var pDownX = 0f; private var pDownY = 0f
@@ -70,7 +72,7 @@ class WallpaperEditorView @JvmOverloads constructor(
     private var _refClkKey = ""
 
     private fun clockRefWidth(): Float {
-        val key = "$use24hr/$showSeconds/${tPaint.textSize.toInt()}"
+        val key = "$use24hr/$showSeconds/$zeroPad/${tPaint.textSize.toInt()}"
         if (key != _refClkKey) {
             val cal = Calendar.getInstance()
             var max = 0f
@@ -84,10 +86,24 @@ class WallpaperEditorView @JvmOverloads constructor(
     }
 
     private val f12   = SimpleDateFormat("h:mm",       Locale.getDefault())
+    private val f12p  = SimpleDateFormat("hh:mm",      Locale.getDefault())
     private val f12s  = SimpleDateFormat("h:mm:ss",    Locale.getDefault())
+    private val f12sp = SimpleDateFormat("hh:mm:ss",   Locale.getDefault())
     private val f24   = SimpleDateFormat("HH:mm",      Locale.getDefault())
     private val f24s  = SimpleDateFormat("HH:mm:ss",   Locale.getDefault())
     private val fDate = SimpleDateFormat("EEE, MMM d", Locale.getDefault())
+    private val fHour24  = SimpleDateFormat("HH", Locale.getDefault())
+    private val fHour12  = SimpleDateFormat("h",  Locale.getDefault())
+    private val fHour12p = SimpleDateFormat("hh", Locale.getDefault())
+    private val fMin     = SimpleDateFormat("mm",    Locale.getDefault())
+    private val fMinSec  = SimpleDateFormat("mm:ss", Locale.getDefault())
+
+    private fun hourStr(d: Date) = when {
+        use24hr -> fHour24.format(d)
+        zeroPad -> fHour12p.format(d)
+        else    -> fHour12.format(d)
+    }
+    private fun minStr(d: Date)  = if (showSeconds) fMinSec.format(d) else fMin.format(d)
 
     private val tick = object : Runnable {
         override fun run() {
@@ -95,12 +111,13 @@ class WallpaperEditorView @JvmOverloads constructor(
         }
     }
 
-    fun setData(bg: Bitmap?, fg: Bitmap?, typeface: Typeface?) {
-        rawBg = bg; rawFg = fg; tf = typeface; applyTypeface(); invalidate()
+    fun setData(bg: Bitmap?, fg: Bitmap?, typeface: Typeface?, dateTypeface: Typeface? = typeface) {
+        rawBg = bg; rawFg = fg; tf = typeface; dateTf = dateTypeface; applyTypeface(); invalidate()
     }
     fun setBg(bg: Bitmap?) { rawBg = bg; invalidate() }
     fun setFg(fg: Bitmap?) { rawFg = fg; invalidate() }
     fun setFontOnly(typeface: Typeface?) { tf = typeface; applyTypeface(); invalidate() }
+    fun setDateFontOnly(typeface: Typeface?) { dateTf = typeface; applyTypeface(); invalidate() }
 
     private fun applyTypeface() {
         val clockTf = tf ?: Typeface.MONOSPACE
@@ -108,7 +125,7 @@ class WallpaperEditorView @JvmOverloads constructor(
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             try { tPaint.fontVariationSettings = "'tnum' 1" } catch (_: Exception) {}
         }
-        dPaint.typeface = tf ?: Typeface.create("sans-serif-light", Typeface.NORMAL)
+        dPaint.typeface = dateTf ?: Typeface.create("sans-serif-light", Typeface.NORMAL)
     }
 
     private fun dimmedColor(color: Int, dim: Float): Int {
@@ -151,12 +168,24 @@ class WallpaperEditorView @JvmOverloads constructor(
             tPaint.color    = dimmedColor(clockColor, clockDim)
             tPaint.textSize = clkPx
             canvas.save(); canvas.translate(clockX * W, clockY * H); canvas.rotate(clockRot)
-            canvas.drawText(tStr, 0f, -(tPaint.descent() + tPaint.ascent()) / 2f, tPaint)
+            if (verticalClock) {
+                val lineH = tPaint.textSize * 1.05f
+                canvas.drawText(hourStr(now), 0f, -lineH / 2f - (tPaint.descent() + tPaint.ascent()) / 2f, tPaint)
+                canvas.drawText(minStr(now),  0f,  lineH / 2f - (tPaint.descent() + tPaint.ascent()) / 2f, tPaint)
+            } else {
+                canvas.drawText(tStr, 0f, -(tPaint.descent() + tPaint.ascent()) / 2f, tPaint)
+            }
             canvas.restore()
             if (activeElement == ActiveElement.CLOCK) {
-                val tw = clockRefWidth()
+                val tw: Float; val th: Float
+                if (verticalClock) {
+                    tw = maxOf(tPaint.measureText(hourStr(now)), tPaint.measureText(minStr(now)))
+                    th = tPaint.textSize * 1.05f * 2f
+                } else {
+                    tw = clockRefWidth(); th = clkPx
+                }
                 canvas.save(); canvas.translate(clockX * W, clockY * H); canvas.rotate(clockRot)
-                val r = RectF(-tw/2f-16f*dp, -clkPx/2f-12f*dp, tw/2f+16f*dp, clkPx/2f+12f*dp)
+                val r = RectF(-tw/2f-16f*dp, -th/2f-12f*dp, tw/2f+16f*dp, th/2f+12f*dp)
                 canvas.drawRoundRect(r, 12f*dp, 12f*dp, selGlow)
                 canvas.drawRoundRect(r, 12f*dp, 12f*dp, selDash)
                 canvas.restore()
@@ -166,8 +195,8 @@ class WallpaperEditorView @JvmOverloads constructor(
         // ── Date ─────────────────────────────────────────────────────────────
         if (showDate) {
             val datePx = dateSz * H
-            val dateBaseColor = Color.argb((Color.alpha(clockColor)*0.85f).toInt().coerceIn(0,255),
-                Color.red(clockColor), Color.green(clockColor), Color.blue(clockColor))
+            val dateBaseColor = Color.argb((Color.alpha(dateColor)*0.85f).toInt().coerceIn(0,255),
+                Color.red(dateColor), Color.green(dateColor), Color.blue(dateColor))
             dPaint.color    = dimmedColor(dateBaseColor, clockDim)
             dPaint.textSize = datePx
             canvas.save(); canvas.translate(dateX * W, dateY * H); canvas.rotate(dateRot)
@@ -263,8 +292,15 @@ class WallpaperEditorView @JvmOverloads constructor(
         var dateHit  = false
         if (showTime) {
             tPaint.textSize = clockSz * H
-            val tw = clockRefWidth()
-            clockHit = hitTest(x,y,clockX*W,clockY*H, tw+40f*dp, clockSz*H+30f*dp, clockRot)
+            val tw: Float; val th: Float
+            if (verticalClock) {
+                val n = Date()
+                tw = maxOf(tPaint.measureText(hourStr(n)), tPaint.measureText(minStr(n)))
+                th = tPaint.textSize * 1.05f * 2f
+            } else {
+                tw = clockRefWidth(); th = clockSz * H
+            }
+            clockHit = hitTest(x,y,clockX*W,clockY*H, tw+40f*dp, th+30f*dp, clockRot)
         }
         if (showDate) {
             dPaint.textSize = dateSz * H
@@ -287,7 +323,8 @@ class WallpaperEditorView @JvmOverloads constructor(
 
     private fun timeStr(d: Date = Date()) = when {
         use24hr && showSeconds -> f24s.format(d); use24hr -> f24.format(d)
-        showSeconds -> f12s.format(d); else -> f12.format(d)
+        showSeconds && zeroPad -> f12sp.format(d); showSeconds -> f12s.format(d)
+        zeroPad -> f12p.format(d); else -> f12.format(d)
     }
     private fun hitTest(tx:Float,ty:Float,cx:Float,cy:Float,w:Float,h:Float,rot:Float): Boolean {
         val rad=Math.toRadians(-rot.toDouble()); val cos=Math.cos(rad).toFloat(); val sin=Math.sin(rad).toFloat()

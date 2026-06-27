@@ -32,6 +32,11 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <!-- Prevent the OS from drawing its own auto-contrast scrim over the
+             status/nav bars — that scrim is what breaks the seamless look
+             between our banner/background and the system bars. -->
+        <item name="android:enforceStatusBarContrast">false</item>
+        <item name="android:enforceNavigationBarContrast">false</item>
     </style>
 
     <!-- Editor activity: fully transparent bars, managed in code -->
@@ -39,5 +44,15 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+    </style>
+
+    <!-- Rounded-corner popup menu (used for the Time / Date context menu) -->
+    <style name="EverWallPopupMenuOverlay">
+        <item name="android:popupMenuStyle">@style/Widget.EverWall.PopupMenu</item>
+    </style>
+
+    <style name="Widget.EverWall.PopupMenu" parent="Widget.AppCompat.PopupMenu">
+        <item name="android:popupBackground">@drawable/bg_popup_menu_rounded</item>
+        <item name="android:popupElevation">10dp</item>
     </style>
 </resources>
