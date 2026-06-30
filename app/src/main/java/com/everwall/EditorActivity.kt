@@ -61,6 +61,12 @@ class EditorActivity : AppCompatActivity() {
     private var loadedBgBmp: Bitmap? = null
     private lateinit var bsb: LockableBottomSheetBehavior<android.widget.LinearLayout>
     private var sheetLocked = true
+    /** True only when controls_root is an actual CoordinatorLayout bottom sheet (portrait).
+     *  In the landscape dual-pane layout, controls_root is a plain, always-visible side
+     *  panel with no behavior attached, so every drag/peek/lock concept is skipped. */
+    private val hasBottomSheet: Boolean by lazy {
+        (b.controlsRoot.layoutParams as? androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams)?.behavior != null
+    }
 
     private var wallpaperMode = WallpaperPrefs.MODE_NONE
     private var editSlot      = WallpaperPrefs.EDIT_NONE
@@ -74,6 +80,31 @@ class EditorActivity : AppCompatActivity() {
     companion object {
         private const val PEEK_HEIGHT_DP = 368f
         private const val BOTTOM_GAP_DP  = 32f
+    }
+
+    /** A full, fresh restart of the editor — not Activity.recreate().
+     *  recreate() saves the current view hierarchy state (Switch/Slider checked
+     *  values, etc.) and automatically restores it onto the newly created views,
+     *  which would silently carry the OLD preset's time/date switches and slider
+     *  positions into the NEW preset. Launching a brand-new Activity instance with
+     *  no saved-instance Bundle guarantees every control is populated purely from
+     *  WallpaperPrefs.loadSlot() for the now-active preset, so presets never leak
+     *  state into one another. */
+    private fun restartEditorFresh() {
+        val i = Intent(this, EditorActivity::class.java)
+        startActivity(i)
+        finish()
+        overridePendingTransition(0, 0)
+    }
+
+    /** Never let the framework auto-save/restore the editor's view hierarchy
+     *  (Switch checked state, Slider positions, etc.). All of that is always
+     *  re-derived from WallpaperPrefs.loadSlot() for whichever preset is
+     *  currently active, so accepting a stale Bundle here would just reintroduce
+     *  the "settings leak between presets" bug. */
+    override fun onSaveInstanceState(outState: Bundle) {
+        // Intentionally do not call super.onSaveInstanceState(outState) and
+        // leave outState empty — nothing is saved, so nothing stale can be restored.
     }
 
     override fun onCreate(s: Bundle?) {
@@ -107,7 +138,8 @@ class EditorActivity : AppCompatActivity() {
         ViewCompat.setOnApplyWindowInsetsListener(b.root) { _, insets ->
             val bars    = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             val dp      = resources.displayMetrics.density
-            val base    = (80 * dp).toInt()
+            val isLand  = resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+            val base    = ((if (isLand) 56 else 80) * dp).toInt()
             val bannerH = base + bars.top
             // Pad only the title/icon row below the status bar — the banner
             // FrameLayout itself stays unpadded so its decorative shapes are
@@ -117,12 +149,17 @@ class EditorActivity : AppCompatActivity() {
                 b.toolbarContentRow.paddingLeft, bars.top,
                 b.toolbarContentRow.paddingRight, 0)
             val lp = b.toolbarContainer.layoutParams; lp.height = bannerH; b.toolbarContainer.layoutParams = lp
-            val plp = b.previewContainer.layoutParams as androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams
-            plp.topMargin = 0; b.previewContainer.layoutParams = plp
+            // Only the portrait layout nests preview_container directly in the
+            // CoordinatorLayout — in the landscape dual-pane layout it's nested
+            // inside a plain LinearLayout, so this cast must stay safe.
+            (b.previewContainer.layoutParams as? androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams)?.let {
+                it.topMargin = 0; b.previewContainer.layoutParams = it
+            }
+            b.previewContainer.setPadding(bars.left, 0, 0, 0)
             b.sidebarScroll.setPadding(b.sidebarScroll.paddingLeft, bannerH + (8 * dp).toInt(),
                 b.sidebarScroll.paddingRight, (24 * dp).toInt())
             b.controlsRoot.setPadding(b.controlsRoot.paddingLeft, b.controlsRoot.paddingTop,
-                b.controlsRoot.paddingRight, bars.bottom)
+                bars.right, bars.bottom)
             val isNight = (resources.configuration.uiMode and
                 android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
                 android.content.res.Configuration.UI_MODE_NIGHT_YES
@@ -146,12 +183,14 @@ class EditorActivity : AppCompatActivity() {
 
         val dp = resources.displayMetrics.density
         b.controlsRoot.post {
-            b.controlsRoot.outlineProvider = object : ViewOutlineProvider() {
-                override fun getOutline(v: View, o: android.graphics.Outline) {
-                    val r = 28f * dp; o.setRoundRect(0, 0, v.width, (v.height + r).toInt(), r)
+            if (hasBottomSheet) {
+                b.controlsRoot.outlineProvider = object : ViewOutlineProvider() {
+                    override fun getOutline(v: View, o: android.graphics.Outline) {
+                        val r = 28f * dp; o.setRoundRect(0, 0, v.width, (v.height + r).toInt(), r)
+                    }
                 }
+                b.controlsRoot.clipToOutline = true
             }
-            b.controlsRoot.clipToOutline = true
             // Apply default locked state once views are laid out
             applyLockState()
         }
@@ -162,11 +201,20 @@ class EditorActivity : AppCompatActivity() {
         autoCheckForUpdates()
     }
 
-    override fun onPause() { save(); super.onPause() }
+    /** Guards against the onPause() autosave firing AFTER WallpaperPrefs.switchToPreset()
+     *  has already flipped the active preset. Without this, starting the replacement
+     *  Activity (in restartEditorFresh) triggers this Activity's onPause(), which would
+     *  call save() with the OLD in-memory UI state but — since the active-preset pointer
+     *  has already moved — write it straight into the NEW preset's storage, stomping every
+     *  field (background, subject, time, date) of the preset being switched to. */
+    private var skipPauseSave = false
+
+    override fun onPause() { if (!skipPauseSave) save(); super.onPause() }
 
     // ── Mode / Day-Night ──────────────────────────────────────────────────────
     private fun setupModeButton() {
         b.btnMode.text = modeLabel()
+        b.btnPresets.setOnClickListener { showPresetsDialog() }
         b.btnMode.setOnClickListener {
             MaterialAlertDialogBuilder(this)
                 .setTitle("Wallpaper Mode")
@@ -275,7 +323,7 @@ class EditorActivity : AppCompatActivity() {
             dateX=p.dateX;   dateY=p.dateY;   dateSz=p.dateSz;   dateRot=p.dateRot
             subjX=p.subjX;   subjY=p.subjY;   subjSc=p.subjSc;   subjRot=p.subjRot
             bgRot=p.bgRot;   use24hr=p.use24; showSeconds=p.secs
-            bgDim=p.bgDim;   clockDim=p.clkDim; subjDim=p.subjDim
+            bgDim=p.bgDim;   clockDim=p.clkDim; subjDim=p.subjDim; dateDim=p.dateDim
             bgSat=p.bgSat;   subjSat=p.subjSat
             showTime=p.showTime; showDate=p.showDate; verticalClock=p.verticalClock
             zeroPad=p.zeroPad
@@ -293,7 +341,7 @@ class EditorActivity : AppCompatActivity() {
             b.sliderClkRot.value  = clockRot.coerceIn(-180f, 180f); b.tvClkRotVal.text = "${clockRot.toInt()}°"
             b.sliderDateRot.value = dateRot.coerceIn(-180f, 180f);  b.tvDateRotVal.text= "${dateRot.toInt()}°"
             b.sliderTimeDim.value = (clockDim * 100f).coerceIn(0f, 100f); b.tvTimeDimVal.text= "${(clockDim * 100).toInt()}%"
-            b.sliderDateDim.value = (clockDim * 100f).coerceIn(0f, 100f); b.tvDateDimVal.text= "${(clockDim * 100).toInt()}%"
+            b.sliderDateDim.value = (dateDim * 100f).coerceIn(0f, 100f); b.tvDateDimVal.text= "${(dateDim * 100).toInt()}%"
             b.sliderSubjRot.value = subjRot.coerceIn(-180f, 180f);  b.tvSubjRotVal.text= "${subjRot.toInt()}°"
             b.sliderSubjDim.value = (subjDim * 100f).coerceIn(0f, 100f); b.tvSubjDimVal.text= "${(subjDim * 100).toInt()}%"
             b.sliderBgSat.value   = (bgSat   * 100f).coerceIn(0f, 200f); b.tvBgSatVal.text  = "${(bgSat   * 100).toInt()}%"
@@ -318,7 +366,7 @@ class EditorActivity : AppCompatActivity() {
             bgDim, clockDim, subjDim, bgSat, subjSat,
             b.switchShowTime.isChecked, b.switchShowDate.isChecked,
             b.switchVerticalClock.isChecked, b.switchZeroPad.isChecked,
-            dateColor
+            dateColor, dateDim
         )
     }
 
@@ -354,11 +402,12 @@ class EditorActivity : AppCompatActivity() {
             clockSz=WallpaperPrefs.DEF_CLK_SZ; clockRot=WallpaperPrefs.DEF_CLK_ROT
             dateX=WallpaperPrefs.DEF_DATE_X; dateY=WallpaperPrefs.DEF_DATE_Y
             dateSz=WallpaperPrefs.DEF_DATE_SZ; dateRot=WallpaperPrefs.DEF_DATE_ROT
-            clockDim=0f
+            clockDim=0f; dateDim=0f
         }
         b.sliderClkRot.value=0f; b.tvClkRotVal.text="0°"
         b.sliderDateRot.value=0f; b.tvDateRotVal.text="0°"
         b.sliderTimeDim.value=0f; b.tvTimeDimVal.text="0%"
+        b.sliderDateDim.value=0f; b.tvDateDimVal.text="0%"
         loadedBgBmp?.let { bmp -> clockColor = smartColor(bmp); b.editorView.clockColor = clockColor; updateSwatch(clockColor); b.colorPicker.color = clockColor }
         b.editorView.invalidate()
     }
@@ -375,6 +424,7 @@ class EditorActivity : AppCompatActivity() {
 
     // ── Bottom sheet ──────────────────────────────────────────────────────────
     private fun setupBottomSheet() {
+        if (!hasBottomSheet) return // landscape dual-pane: controls panel is always fully visible
         val dp = resources.displayMetrics.density
         @Suppress("UNCHECKED_CAST")
         bsb = BottomSheetBehavior.from(b.controlsRoot) as LockableBottomSheetBehavior<android.widget.LinearLayout>
@@ -391,11 +441,18 @@ class EditorActivity : AppCompatActivity() {
                 if (contH <= 100 || contW <= 0) return
                 b.previewContainer.viewTreeObserver.removeOnGlobalLayoutListener(this)
                 val dp      = resources.displayMetrics.density
-                val peekH   = (PEEK_HEIGHT_DP * dp).toInt(); val gapH  = (BOTTOM_GAP_DP * dp).toInt()
                 val padH    = (14 * dp).toInt(); val sidebarR = (88 * dp).toInt()
                 val toolbarH = b.toolbarContainer.height.takeIf { it > 0 } ?: ((72 * dp).toInt())
                 val avW = (contW - padH * 2 - sidebarR).coerceAtLeast(1)
-                val avH = (contH - peekH - gapH - toolbarH - padH).coerceAtLeast((80 * dp).toInt())
+                val gapH = (BOTTOM_GAP_DP * dp).toInt()
+                val avH = if (hasBottomSheet) {
+                    val peekH = (PEEK_HEIGHT_DP * dp).toInt()
+                    (contH - peekH - gapH - toolbarH - padH).coerceAtLeast((80 * dp).toInt())
+                } else {
+                    // Landscape dual-pane: the controls panel is a separate side pane,
+                    // not an overlapping sheet, so the preview gets the full pane height.
+                    (contH - toolbarH - padH - gapH).coerceAtLeast((80 * dp).toInt())
+                }
                 val hFromW = (avW.toLong() * surfH / surfW).toInt()
                 val finalW: Int; val finalH: Int
                 if (hFromW <= avH) { finalW = avW; finalH = hFromW } else { finalH = avH; finalW = (avH.toLong() * surfW / surfH).toInt() }
@@ -436,8 +493,8 @@ class EditorActivity : AppCompatActivity() {
         val p   = WallpaperPrefs.loadSlot(this, editSlot)
         val bgF = WallpaperPrefs.getBgFileForSlot(this, editSlot)
         val fgF = WallpaperPrefs.getFgFileForSlot(this, editSlot)
-        val ftF = File(filesDir, WallpaperPrefs.FILE_FONT)
-        val ftFDate = File(filesDir, WallpaperPrefs.FILE_FONT_DATE)
+        val ftF = WallpaperPrefs.getFontFile(this)
+        val ftFDate = WallpaperPrefs.getDateFontFile(this)
         val bgBmp = if (bgF.exists()) BitmapFactory.decodeFile(bgF.absolutePath) else null
         val fgBmp = if (fgF.exists()) BitmapFactory.decodeFile(fgF.absolutePath) else null
         val tf    = if (ftF.exists()) try { Typeface.createFromFile(ftF) } catch (_: Exception) { null } else null
@@ -450,7 +507,7 @@ class EditorActivity : AppCompatActivity() {
             dateX=p.dateX;   dateY=p.dateY;   dateSz=p.dateSz;   dateRot=p.dateRot
             subjX=p.subjX;   subjY=p.subjY;   subjSc=p.subjSc;   subjRot=p.subjRot
             bgRot=p.bgRot;   use24hr=p.use24; showSeconds=p.secs
-            bgDim=p.bgDim;   clockDim=p.clkDim; subjDim=p.subjDim
+            bgDim=p.bgDim;   clockDim=p.clkDim; subjDim=p.subjDim; dateDim=p.dateDim
             this.clockColor = this@EditorActivity.clockColor
             this.dateColor  = this@EditorActivity.dateColor
             showTime=p.showTime; showDate=p.showDate; verticalClock=p.verticalClock
@@ -462,6 +519,7 @@ class EditorActivity : AppCompatActivity() {
 
     // ── Pills ─────────────────────────────────────────────────────────────────
     private fun applyLockState() {
+        if (!hasBottomSheet) return // nothing to lock/unlock; the panel is always fully expanded
         bsb.locked = sheetLocked
         b.ivLock.setImageResource(if (sheetLocked) R.drawable.ic_lock else R.drawable.ic_lock_open)
         val circleTint = if (sheetLocked) attr(com.google.android.material.R.attr.colorSecondaryContainer) else 0x1AFFFFFF.toInt()
@@ -589,7 +647,7 @@ class EditorActivity : AppCompatActivity() {
         b.sliderSubjDim.addOnChangeListener { _, v, _ -> b.tvSubjDimVal.text = "${v.toInt()}%"; b.editorView.subjDim   = v / 100f }
         b.sliderBgSat.addOnChangeListener   { _, v, _ -> b.tvBgSatVal.text   = "${v.toInt()}%"; b.editorView.bgSat     = v / 100f }
         b.sliderSubjSat.addOnChangeListener { _, v, _ -> b.tvSubjSatVal.text = "${v.toInt()}%"; b.editorView.subjSat   = v / 100f }
-        b.sliderDateDim.addOnChangeListener { _, v, _ -> b.tvDateDimVal.text = "${v.toInt()}%"; b.editorView.clockDim  = v / 100f }
+        b.sliderDateDim.addOnChangeListener { _, v, _ -> b.tvDateDimVal.text = "${v.toInt()}%"; b.editorView.dateDim  = v / 100f }
         b.switch24hr.setOnCheckedChangeListener    { _, c ->
             b.editorView.use24hr = c
             b.rowZeroPad.visibility = if (c) View.GONE else View.VISIBLE
@@ -648,8 +706,8 @@ class EditorActivity : AppCompatActivity() {
 
         b.btnPickFontDate.setOnClickListener { fontPickIsDate = true; pickFont.launch("*/*") }
 
-        val ftF = File(filesDir, WallpaperPrefs.FILE_FONT)
-        val ftFDate = File(filesDir, WallpaperPrefs.FILE_FONT_DATE)
+        val ftF = WallpaperPrefs.getFontFile(this)
+        val ftFDate = WallpaperPrefs.getDateFontFile(this)
         b.tvFontStatus.text = if (ftF.exists()) ftF.name else "System default"
         b.tvDateFontStatus.text = if (ftFDate.exists()) ftFDate.name else if (ftF.exists()) ftF.name else "System default"
 
@@ -694,7 +752,7 @@ class EditorActivity : AppCompatActivity() {
     private fun onFont(uri: Uri, isDate: Boolean) {
         val name = displayName(uri) ?: uri.lastPathSegment ?: ""
         if (!name.endsWith(".ttf", ignoreCase = true)) { toast("Please select a .ttf file."); return }
-        val destFile = File(filesDir, if (isDate) WallpaperPrefs.FILE_FONT_DATE else WallpaperPrefs.FILE_FONT)
+        val destFile = if (isDate) WallpaperPrefs.getDateFontFile(this) else WallpaperPrefs.getFontFile(this)
         contentResolver.openInputStream(uri)?.use { inp -> destFile.outputStream().use { inp.copyTo(it) } }
         val tf = try { Typeface.createFromFile(destFile) } catch (_: Exception) { null }
         if (isDate) {
@@ -706,7 +764,7 @@ class EditorActivity : AppCompatActivity() {
         }
         toast("Font applied")
         askApplyToOther(changedIsTime = !isDate, kindLabel = "font") {
-            val otherFile = File(filesDir, if (isDate) WallpaperPrefs.FILE_FONT else WallpaperPrefs.FILE_FONT_DATE)
+            val otherFile = if (isDate) WallpaperPrefs.getFontFile(this) else WallpaperPrefs.getDateFontFile(this)
             destFile.copyTo(otherFile, overwrite = true)
             val otherTf = try { Typeface.createFromFile(otherFile) } catch (_: Exception) { null }
             if (isDate) {
@@ -1162,6 +1220,14 @@ class EditorActivity : AppCompatActivity() {
             WallpaperPrefs.setMusicArtDim(this, v / 100f)
         }
 
+        val savedBlur = (WallpaperPrefs.getMusicArtBlur(this) * 100f).toInt()
+        mb.sliderMusicArtBlur.value = savedBlur.toFloat()
+        mb.tvMusicArtBlurVal.text = "$savedBlur%"
+        mb.sliderMusicArtBlur.addOnChangeListener { _, v, _ ->
+            mb.tvMusicArtBlurVal.text = "${v.toInt()}%"
+            WallpaperPrefs.setMusicArtBlur(this, v / 100f)
+        }
+
         if (granted) {
             mb.btnGrantNotifAccess.visibility = View.GONE
         } else {
@@ -1184,6 +1250,134 @@ class EditorActivity : AppCompatActivity() {
         b.btnMusicArt.setTextColor(textTint)
         b.btnMusicArt.iconTint = android.content.res.ColorStateList.valueOf(textTint)
         b.btnMusicArt.strokeWidth = if (enabled) 0 else resources.getDimensionPixelSize(R.dimen.pill_stroke)
+    }
+
+    // ── Presets ──────────────────────────────────────────────────────────────
+    /** A floating popup listing every saved preset; tapping one swaps its full
+     *  customisation (background, subject, time, date, mode) into the editor
+     *  without touching any other preset's saved state. */
+    private fun showPresetsDialog() {
+        val dialog = BottomSheetDialog(this)
+        val dp = resources.displayMetrics.density
+
+        val root = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding((20 * dp).toInt(), (8 * dp).toInt(), (20 * dp).toInt(), (28 * dp).toInt())
+        }
+
+        val handle = View(this).apply {
+            layoutParams = android.widget.LinearLayout.LayoutParams((36 * dp).toInt(), (4 * dp).toInt()).also {
+                it.gravity = android.view.Gravity.CENTER_HORIZONTAL
+                it.topMargin = (6 * dp).toInt(); it.bottomMargin = (10 * dp).toInt()
+            }
+            background = ContextCompat.getDrawable(this@EditorActivity, R.drawable.bg_drag_handle)
+        }
+        root.addView(handle)
+
+        val header = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+        }
+        val headerIcon = android.widget.ImageView(this).apply {
+            layoutParams = android.widget.LinearLayout.LayoutParams((22 * dp).toInt(), (22 * dp).toInt()).also {
+                it.marginEnd = (10 * dp).toInt()
+            }
+            setImageResource(R.drawable.ic_presets)
+            imageTintList = android.content.res.ColorStateList.valueOf(attr(com.google.android.material.R.attr.colorPrimary))
+        }
+        val headerTitle = android.widget.TextView(this).apply {
+            text = "Presets"; textSize = 18f
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+            setTextColor(attr(com.google.android.material.R.attr.colorOnSurface))
+        }
+        header.addView(headerIcon); header.addView(headerTitle)
+        root.addView(header)
+
+        val subtitle = android.widget.TextView(this).apply {
+            text = "Switch between saved wallpaper customisations. Each preset keeps its own background, subject, time and date setup."
+            textSize = 12.5f
+            setTextColor(attr(com.google.android.material.R.attr.colorOnSurfaceVariant))
+            setPadding(0, (4 * dp).toInt(), 0, (16 * dp).toInt())
+            setLineSpacing((2 * dp), 1f)
+        }
+        root.addView(subtitle)
+
+        val listContainer = android.widget.LinearLayout(this).apply { orientation = android.widget.LinearLayout.VERTICAL }
+        root.addView(listContainer)
+
+        val activeId = WallpaperPrefs.getActivePreset(this)
+        val count    = WallpaperPrefs.getPresetCount(this)
+
+        for (index in 0 until count) {
+            val active = index == activeId
+            val card = com.google.android.material.card.MaterialCardView(this).apply {
+                layoutParams = android.widget.LinearLayout.LayoutParams(
+                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT, (52 * dp).toInt()
+                ).also { it.bottomMargin = (10 * dp).toInt() }
+                radius = 14f * dp
+                cardElevation = 0f
+                strokeWidth = if (active) 0 else (1.2f * dp).toInt()
+                strokeColor = attr(com.google.android.material.R.attr.colorOutlineVariant)
+                setCardBackgroundColor(if (active) attr(com.google.android.material.R.attr.colorPrimaryContainer)
+                                       else attr(com.google.android.material.R.attr.colorSurfaceContainerHigh))
+                isClickable = true; isFocusable = true
+            }
+            val row = android.widget.LinearLayout(this).apply {
+                orientation = android.widget.LinearLayout.HORIZONTAL
+                gravity = android.view.Gravity.CENTER_VERTICAL
+                setPadding((16 * dp).toInt(), 0, (16 * dp).toInt(), 0)
+            }
+            val label = android.widget.TextView(this).apply {
+                layoutParams = android.widget.LinearLayout.LayoutParams(0, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                text = "Preset ${index + 1}"
+                textSize = 14.5f
+                setTypeface(typeface, if (active) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
+                setTextColor(if (active) attr(com.google.android.material.R.attr.colorOnPrimaryContainer)
+                             else attr(com.google.android.material.R.attr.colorOnSurface))
+            }
+            row.addView(label)
+            if (active) {
+                row.addView(android.widget.TextView(this).apply {
+                    text = "ACTIVE"; textSize = 10.5f
+                    setTypeface(typeface, android.graphics.Typeface.BOLD)
+                    setTextColor(attr(com.google.android.material.R.attr.colorOnPrimaryContainer))
+                    letterSpacing = 0.08f
+                })
+            }
+            card.addView(row)
+            card.setOnClickListener {
+                if (index != activeId) {
+                    save()
+                    skipPauseSave = true
+                    WallpaperPrefs.switchToPreset(this, index)
+                    dialog.dismiss()
+                    restartEditorFresh()
+                } else dialog.dismiss()
+            }
+            listContainer.addView(card)
+        }
+
+        val addBtn = com.google.android.material.button.MaterialButton(
+            this, null, com.google.android.material.R.attr.borderlessButtonStyle).apply {
+            text = "+ Add Preset"
+            layoutParams = android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT).also { it.topMargin = (2 * dp).toInt() }
+        }
+        addBtn.setOnClickListener {
+            save()
+            skipPauseSave = true
+            WallpaperPrefs.addPreset(this)
+            dialog.dismiss()
+            restartEditorFresh()
+        }
+        root.addView(addBtn)
+
+        root.alpha = 0f
+        root.animate().alpha(1f).setDuration(260).setInterpolator(DecelerateInterpolator(2f)).start()
+
+        dialog.setContentView(root)
+        dialog.show()
     }
 
     private fun openUrl(url: String) {

@@ -13,6 +13,8 @@
         android:layout_height="match_parent"
         android:background="#0A0A0A">
 
+
+
         <!-- Banner-style background — shown when "Background behind preview" is ON -->
         <FrameLayout
             android:id="@+id/preview_bg_frame"
@@ -416,6 +418,7 @@
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
 
+
     </FrameLayout>
     <!-- ── Banner header (replaces floating dark toolbar) ──────────────────── -->
     <FrameLayout
@@ -585,7 +588,7 @@
         app:behavior_skipCollapsed="false"
         app:behavior_draggable="true">
 
-        <!-- Header: drag pill + Set Live button -->
+        <!-- Header: drag pill + Presets + Set Live button -->
         <FrameLayout
             android:id="@+id/drag_handle"
             android:layout_width="match_parent"
@@ -599,6 +602,23 @@
                 android:background="@drawable/bg_drag_handle"
                 android:backgroundTint="?attr/colorOnSurfaceVariant"
                 android:alpha="0.3" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_presets"
+                style="@style/Widget.Material3.Button"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:layout_gravity="center_vertical|start"
+                android:layout_marginStart="16dp"
+                android:text="Presets"
+                android:textSize="11sp"
+                android:paddingStart="10dp"
+                android:paddingEnd="12dp"
+                app:cornerRadius="18dp"
+                app:icon="@drawable/ic_presets"
+                app:iconSize="14dp"
+                app:iconGravity="textStart"
+                app:iconPadding="4dp" />
 
             <LinearLayout
                 android:layout_width="wrap_content"
@@ -654,6 +674,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
+
 
                 <!-- Mode selector — above pill navigation row -->
                 <LinearLayout
@@ -996,15 +1017,15 @@
                         android:background="?attr/colorOutlineVariant" android:layout_marginBottom="22dp" />
 
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="DIM" android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
+                        android:text="TRANSPARENCY" android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
                         android:textColor="?attr/colorPrimary" android:letterSpacing="0.12" android:layout_marginBottom="6dp" />
                     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
                         android:orientation="horizontal" android:gravity="center_vertical">
                         <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                                android:text="Dim Element" android:textAppearance="@style/TextAppearance.Material3.BodyLarge" android:textColor="?attr/colorOnSurface" />
+                                android:text="Transparency" android:textAppearance="@style/TextAppearance.Material3.BodyLarge" android:textColor="?attr/colorOnSurface" />
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                                android:text="Reduce clock and date brightness" android:textAppearance="@style/TextAppearance.Material3.BodySmall" android:textColor="?attr/colorOnSurfaceVariant" />
+                                android:text="Adjust clock opacity" android:textAppearance="@style/TextAppearance.Material3.BodySmall" android:textColor="?attr/colorOnSurfaceVariant" />
                         </LinearLayout>
                         <TextView android:id="@+id/tv_time_dim_val" android:layout_width="wrap_content" android:layout_height="wrap_content"
                             android:text="0%" android:textAppearance="@style/TextAppearance.Material3.TitleSmall"
@@ -1164,15 +1185,15 @@
                         android:background="?attr/colorOutlineVariant" android:layout_marginBottom="22dp" />
 
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="DIM" android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
+                        android:text="TRANSPARENCY" android:textAppearance="@style/TextAppearance.Material3.LabelSmall"
                         android:textColor="?attr/colorPrimary" android:letterSpacing="0.12" android:layout_marginBottom="6dp" />
                     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
                         android:orientation="horizontal" android:gravity="center_vertical">
                         <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical">
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                                android:text="Dim Element" android:textAppearance="@style/TextAppearance.Material3.BodyLarge" android:textColor="?attr/colorOnSurface" />
+                                android:text="Transparency" android:textAppearance="@style/TextAppearance.Material3.BodyLarge" android:textColor="?attr/colorOnSurface" />
                             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                                android:text="Reduce date brightness" android:textAppearance="@style/TextAppearance.Material3.BodySmall" android:textColor="?attr/colorOnSurfaceVariant" />
+                                android:text="Adjust date opacity" android:textAppearance="@style/TextAppearance.Material3.BodySmall" android:textColor="?attr/colorOnSurfaceVariant" />
                         </LinearLayout>
                         <TextView android:id="@+id/tv_date_dim_val" android:layout_width="wrap_content" android:layout_height="wrap_content"
                             android:text="0%" android:textAppearance="@style/TextAppearance.Material3.TitleSmall"

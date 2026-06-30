@@ -33,6 +33,7 @@ class DepthWallpaperService : WallpaperService() {
         private var rawMusicArt: Bitmap? = null
         private var cachedMusicArt: Bitmap? = null
         private var cachedMusicArtW = 0; private var cachedMusicArtH = 0
+        private var cachedMusicArtBlur = -1f
 
         // Previous music art for cross-fade between tracks
         private var cachedMusicArtPrev: Bitmap? = null
@@ -161,7 +162,7 @@ class DepthWallpaperService : WallpaperService() {
                         cachedMusicArt = null
                         rawMusicArt?.recycle(); rawMusicArt = newArt
                         cachedMusicArtW = 0; cachedMusicArtH = 0
-                        if (surfW > 0 && surfH > 0) buildMusicArtBg(surfW, surfH)
+                        if (surfW > 0 && surfH > 0) buildMusicArtBg(surfW, surfH, WallpaperPrefs.getMusicArtBlur(this@DepthWallpaperService))
                         crossFadeAlpha = 0f
                         crossFadeStartMs = SystemClock.elapsedRealtime()
                         handler.removeCallbacks(crossFadeTick)
@@ -171,7 +172,7 @@ class DepthWallpaperService : WallpaperService() {
                         rawMusicArt?.recycle(); rawMusicArt = newArt
                         cachedMusicArt?.recycle(); cachedMusicArt = null
                         cachedMusicArtW = 0; cachedMusicArtH = 0
-                        if (surfW > 0 && surfH > 0) buildMusicArtBg(surfW, surfH)
+                        if (surfW > 0 && surfH > 0) buildMusicArtBg(surfW, surfH, WallpaperPrefs.getMusicArtBlur(this@DepthWallpaperService))
                         crossFadeAlpha = 1f
                         startMusicFade(target = 1f)
                     }
@@ -207,9 +208,9 @@ class DepthWallpaperService : WallpaperService() {
 
         private fun load() {
             lastNightMode = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
-            val ftF = File(filesDir, WallpaperPrefs.FILE_FONT)
+            val ftF = WallpaperPrefs.getFontFile(this@DepthWallpaperService)
             tf    = if (ftF.exists()) try { Typeface.createFromFile(ftF) } catch (_: Exception) { null } else null
-            val ftFDate = File(filesDir, WallpaperPrefs.FILE_FONT_DATE)
+            val ftFDate = WallpaperPrefs.getDateFontFile(this@DepthWallpaperService)
             dateTf = if (ftFDate.exists()) try { Typeface.createFromFile(ftFDate) } catch (_: Exception) { null } else tf
             tPaint.typeface = tf ?: Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
             dPaint.typeface = dateTf ?: Typeface.create("sans-serif-light", Typeface.NORMAL)
@@ -266,7 +267,7 @@ class DepthWallpaperService : WallpaperService() {
             if (slot != lastSlot) { lastSlot = slot; loadForSlot(slot) }
             val p = WallpaperPrefs.loadSlot(this@DepthWallpaperService, slot)
             buildBg(w, hi, p.bgRot)
-            if (rawMusicArt != null) buildMusicArtBg(w, hi)
+            if (rawMusicArt != null) buildMusicArtBg(w, hi, WallpaperPrefs.getMusicArtBlur(this@DepthWallpaperService))
             drawFrame()
         }
 
@@ -302,20 +303,35 @@ class DepthWallpaperService : WallpaperService() {
             cachedBg?.recycle(); cachedBg = out
         }
 
-        private fun buildMusicArtBg(w: Int, h: Int) {
-            if (w == cachedMusicArtW && h == cachedMusicArtH && cachedMusicArt != null) return
+        private fun buildMusicArtBg(w: Int, h: Int, blur: Float) {
+            if (w == cachedMusicArtW && h == cachedMusicArtH && cachedMusicArt != null && cachedMusicArtBlur == blur) return
             val art = rawMusicArt ?: return
             // Cover-fit: fill the surface, centre-crop
             val scale  = maxOf(w.toFloat() / art.width, h.toFloat() / art.height)
             val sw = (art.width  * scale).toInt().coerceAtLeast(1)
             val sh = (art.height * scale).toInt().coerceAtLeast(1)
             val scaled = Bitmap.createScaledBitmap(art, sw, sh, true)
+            val blurred = applyBlur(scaled, blur)
             val out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
             val c = Canvas(out); c.drawColor(Color.BLACK)
             val paint = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
-            c.drawBitmap(scaled, (w - sw) / 2f, (h - sh) / 2f, paint)
+            c.drawBitmap(blurred, (w - sw) / 2f, (h - sh) / 2f, paint)
+            if (blurred !== scaled) blurred.recycle()
             cachedMusicArt?.recycle(); cachedMusicArt = out
-            cachedMusicArtW = w; cachedMusicArtH = h
+            cachedMusicArtW = w; cachedMusicArtH = h; cachedMusicArtBlur = blur
+        }
+
+        /** Cheap, dependency-free blur: downscale then upscale with bilinear filtering.
+         *  [amount] is 0 (no blur) .. 1 (very blurred). Works on every API level. */
+        private fun applyBlur(src: Bitmap, amount: Float): Bitmap {
+            if (amount <= 0.01f) return src
+            val factor = (1f - amount * 0.92f).coerceIn(0.04f, 1f)
+            val sw = (src.width  * factor).toInt().coerceAtLeast(1)
+            val sh = (src.height * factor).toInt().coerceAtLeast(1)
+            val small = Bitmap.createScaledBitmap(src, sw, sh, true)
+            val result = Bitmap.createScaledBitmap(small, src.width, src.height, true)
+            if (small !== result) small.recycle()
+            return result
         }
 
         private fun drawFrame() {
@@ -324,13 +340,13 @@ class DepthWallpaperService : WallpaperService() {
             finally { canvas?.let { holder.unlockCanvasAndPost(it) } }
         }
 
-        private fun dimmedColor(color: Int, dim: Float, alphaScale: Float = 1f): Int {
-            val f = (1f - dim).coerceIn(0f, 1f)
+        /** Fades [color] toward transparent by [amount] (0 = fully opaque, 1 = fully transparent),
+         *  combined with the auto-hide [alphaScale] fade — no hue/brightness change, real transparency. */
+        private fun transparentColor(color: Int, amount: Float, alphaScale: Float = 1f): Int {
+            val f = (1f - amount).coerceIn(0f, 1f) * alphaScale.coerceIn(0f, 1f)
             return Color.argb(
-                (Color.alpha(color) * alphaScale).toInt().coerceIn(0, 255),
-                (Color.red(color)   * f).toInt().coerceIn(0, 255),
-                (Color.green(color) * f).toInt().coerceIn(0, 255),
-                (Color.blue(color)  * f).toInt().coerceIn(0, 255))
+                (Color.alpha(color) * f).toInt().coerceIn(0, 255),
+                Color.red(color), Color.green(color), Color.blue(color))
         }
 
         private fun draw(canvas: Canvas) {
@@ -359,8 +375,9 @@ class DepthWallpaperService : WallpaperService() {
 
             // ── Music art overlay ─────────────────────────────────────────────
             if (musicArtAlpha > 0f) {
-                if (cachedMusicArt == null || cachedMusicArtW != W.toInt() || cachedMusicArtH != H.toInt()) {
-                    buildMusicArtBg(W.toInt(), H.toInt())
+                val artBlur = WallpaperPrefs.getMusicArtBlur(ctx)
+                if (cachedMusicArt == null || cachedMusicArtW != W.toInt() || cachedMusicArtH != H.toInt() || cachedMusicArtBlur != artBlur) {
+                    buildMusicArtBg(W.toInt(), H.toInt(), artBlur)
                 }
                 val baseAlpha = (255 * musicArtAlpha).toInt().coerceIn(0, 255)
                 // Draw previous thumbnail fading out during cross-fade
@@ -409,9 +426,9 @@ class DepthWallpaperService : WallpaperService() {
             val clockAlpha = if (autoHide) clockFadeAlpha else 1f
             val effectiveClockAlpha = clockAlpha * (1f - musicArtAlpha)
 
-            if (effectiveClockAlpha > 0f && !isPreview()) {
+            if (effectiveClockAlpha > 0f) {
                 if (p.showTime) {
-                    tPaint.color    = dimmedColor(color, p.clkDim, effectiveClockAlpha)
+                    tPaint.color    = transparentColor(color, p.clkDim, effectiveClockAlpha)
                     tPaint.textSize = p.clockSz * H
                     tPaint.typeface = tf ?: Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
                     canvas.save(); canvas.translate(p.clockX * W, p.clockY * H); canvas.rotate(p.clockRot)
@@ -434,7 +451,7 @@ class DepthWallpaperService : WallpaperService() {
                     val dateBase = Color.argb(
                         (Color.alpha(dateColor) * 0.85f).toInt().coerceIn(0, 255),
                         Color.red(dateColor), Color.green(dateColor), Color.blue(dateColor))
-                    dPaint.color    = dimmedColor(dateBase, p.clkDim, effectiveClockAlpha)
+                    dPaint.color    = transparentColor(dateBase, p.dateDim, effectiveClockAlpha)
                     dPaint.textSize = p.dateSz * H
                     dPaint.typeface = dateTf ?: Typeface.create("sans-serif-light", Typeface.NORMAL)
                     canvas.save(); canvas.translate(p.dateX * W, p.dateY * H); canvas.rotate(p.dateRot)

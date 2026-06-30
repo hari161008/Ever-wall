@@ -23,7 +23,7 @@ class WallpaperEditorView @JvmOverloads constructor(
     var use24hr = false; var showSeconds = false
     var clockColor = Color.WHITE
     var dateColor = Color.WHITE
-    var bgDim = 0f; var clockDim = 0f; var subjDim = 0f
+    var bgDim = 0f; var clockDim = 0f; var subjDim = 0f; var dateDim = 0f
     var bgSat = 1f;  var subjSat = 1f
     var showTime = true; var showDate = true; var verticalClock = false; var zeroPad = true
 
@@ -128,12 +128,12 @@ class WallpaperEditorView @JvmOverloads constructor(
         dPaint.typeface = dateTf ?: Typeface.create("sans-serif-light", Typeface.NORMAL)
     }
 
-    private fun dimmedColor(color: Int, dim: Float): Int {
-        val f = (1f - dim).coerceIn(0f, 1f)
-        return Color.argb(Color.alpha(color),
-            (Color.red(color)   * f).toInt().coerceIn(0, 255),
-            (Color.green(color) * f).toInt().coerceIn(0, 255),
-            (Color.blue(color)  * f).toInt().coerceIn(0, 255))
+    /** Fades [color] toward transparent by [amount] (0 = fully opaque, 1 = fully transparent)
+     *  without altering its hue/brightness — this is real transparency, not a darken effect. */
+    private fun transparentColor(color: Int, amount: Float): Int {
+        val f = (1f - amount).coerceIn(0f, 1f)
+        return Color.argb((Color.alpha(color) * f).toInt().coerceIn(0, 255),
+            Color.red(color), Color.green(color), Color.blue(color))
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -165,7 +165,7 @@ class WallpaperEditorView @JvmOverloads constructor(
         // ── Clock ────────────────────────────────────────────────────────────
         if (showTime) {
             val clkPx = clockSz * H
-            tPaint.color    = dimmedColor(clockColor, clockDim)
+            tPaint.color    = transparentColor(clockColor, clockDim)
             tPaint.textSize = clkPx
             canvas.save(); canvas.translate(clockX * W, clockY * H); canvas.rotate(clockRot)
             if (verticalClock) {
@@ -197,7 +197,7 @@ class WallpaperEditorView @JvmOverloads constructor(
             val datePx = dateSz * H
             val dateBaseColor = Color.argb((Color.alpha(dateColor)*0.85f).toInt().coerceIn(0,255),
                 Color.red(dateColor), Color.green(dateColor), Color.blue(dateColor))
-            dPaint.color    = dimmedColor(dateBaseColor, clockDim)
+            dPaint.color    = transparentColor(dateBaseColor, dateDim)
             dPaint.textSize = datePx
             canvas.save(); canvas.translate(dateX * W, dateY * H); canvas.rotate(dateRot)
             canvas.drawText(dStr, 0f, -(dPaint.descent() + dPaint.ascent()) / 2f, dPaint)

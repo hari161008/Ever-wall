@@ -25,6 +25,7 @@ object WallpaperPrefs {
     private const val KEY_SURF_W   = "surface_w"; private const val KEY_SURF_H  = "surface_h"
     private const val KEY_BG_DIM   = "bg_dim"
     private const val KEY_CLK_DIM  = "clk_dim"
+    private const val KEY_DATE_DIM = "date_dim"
     private const val KEY_SUBJ_DIM = "subj_dim"
     private const val KEY_BG_SAT   = "bg_sat"
     private const val KEY_SUBJ_SAT = "subj_sat"
@@ -80,6 +81,7 @@ object WallpaperPrefs {
     fun getBgDim(ctx: Context)     = prefs(ctx).getFloat(KEY_BG_DIM,   0f)
     fun getClkDim(ctx: Context)    = prefs(ctx).getFloat(KEY_CLK_DIM,  0f)
     fun getSubjDim(ctx: Context)   = prefs(ctx).getFloat(KEY_SUBJ_DIM, 0f)
+    fun getDateDim(ctx: Context)   = prefs(ctx).getFloat(KEY_DATE_DIM, 0f)
     fun getAutoHide(ctx: Context)  = prefs(ctx).getBoolean(KEY_AUTO_HIDE, false)
     fun setAutoHide(ctx: Context, v: Boolean) = prefs(ctx).edit().putBoolean(KEY_AUTO_HIDE, v).apply()
 
@@ -108,20 +110,24 @@ object WallpaperPrefs {
     private fun metaPrefs(ctx: Context) = ctx.getSharedPreferences(META_PREFS, Context.MODE_PRIVATE)
 
     fun slotPrefs(ctx: Context, slot: Int) = ctx.getSharedPreferences(
-        when(slot) { EDIT_DAY -> "ew_day"; EDIT_NIGHT -> "ew_night"; else -> PREFS },
+        scopedName(ctx, when(slot) { EDIT_DAY -> "ew_day"; EDIT_NIGHT -> "ew_night"; else -> PREFS }),
         Context.MODE_PRIVATE)
 
-    fun getWallpaperMode(ctx: Context)             = metaPrefs(ctx).getInt(KEY_WMODE, MODE_NONE)
-    fun setWallpaperMode(ctx: Context, v: Int)     = metaPrefs(ctx).edit().putInt(KEY_WMODE, v).apply()
-    fun getDayMins(ctx: Context)                   = metaPrefs(ctx).getInt(KEY_DAY_M, -1)
-    fun setDayMins(ctx: Context, v: Int)           = metaPrefs(ctx).edit().putInt(KEY_DAY_M, v).apply()
-    fun getNightMins(ctx: Context)                 = metaPrefs(ctx).getInt(KEY_NIGHT_M, -1)
-    fun setNightMins(ctx: Context, v: Int)         = metaPrefs(ctx).edit().putInt(KEY_NIGHT_M, v).apply()
+    fun getWallpaperMode(ctx: Context)             = prefs(ctx).getInt(KEY_WMODE, MODE_NONE)
+    fun setWallpaperMode(ctx: Context, v: Int)     = prefs(ctx).edit().putInt(KEY_WMODE, v).apply()
+    fun getDayMins(ctx: Context)                   = prefs(ctx).getInt(KEY_DAY_M, -1)
+    fun setDayMins(ctx: Context, v: Int)           = prefs(ctx).edit().putInt(KEY_DAY_M, v).apply()
+    fun getNightMins(ctx: Context)                 = prefs(ctx).getInt(KEY_NIGHT_M, -1)
+    fun setNightMins(ctx: Context, v: Int)         = prefs(ctx).edit().putInt(KEY_NIGHT_M, v).apply()
 
-    fun getBgFileForSlot(ctx: Context, slot: Int) = java.io.File(ctx.filesDir,
-        when(slot) { EDIT_DAY -> "ew_bg_day.png"; EDIT_NIGHT -> "ew_bg_night.png"; else -> FILE_ORIGINAL })
-    fun getFgFileForSlot(ctx: Context, slot: Int) = java.io.File(ctx.filesDir,
-        when(slot) { EDIT_DAY -> "ew_fg_day.png"; EDIT_NIGHT -> "ew_fg_night.png"; else -> FILE_FOREGROUND })
+    fun getBgFileForSlot(ctx: Context, slot: Int) = java.io.File(ctx.filesDir, scopedName(ctx,
+        when(slot) { EDIT_DAY -> "ew_bg_day.png"; EDIT_NIGHT -> "ew_bg_night.png"; else -> FILE_ORIGINAL }))
+    fun getFgFileForSlot(ctx: Context, slot: Int) = java.io.File(ctx.filesDir, scopedName(ctx,
+        when(slot) { EDIT_DAY -> "ew_fg_day.png"; EDIT_NIGHT -> "ew_fg_night.png"; else -> FILE_FOREGROUND }))
+
+    /** Custom clock/date fonts are part of a preset's look too — each preset gets its own. */
+    fun getFontFile(ctx: Context)     = java.io.File(ctx.filesDir, scopedName(ctx, FILE_FONT))
+    fun getDateFontFile(ctx: Context) = java.io.File(ctx.filesDir, scopedName(ctx, FILE_FONT_DATE))
 
     fun activeSlot(ctx: Context): Int {
         return when (getWallpaperMode(ctx)) {
@@ -151,7 +157,8 @@ object WallpaperPrefs {
         val bgSat: Float = 1f, val subjSat: Float = 1f,
         val showTime: Boolean = true, val showDate: Boolean = true,
         val verticalClock: Boolean = false, val zeroPad: Boolean = true,
-        val dateColor: Int = NO_COLOR
+        val dateColor: Int = NO_COLOR,
+        val dateDim: Float = 0f
     )
 
     fun loadSlot(ctx: Context, slot: Int): WallPrefs {
@@ -170,7 +177,8 @@ object WallpaperPrefs {
             sp.getFloat(KEY_BG_SAT, 1f), sp.getFloat(KEY_SUBJ_SAT, 1f),
             sp.getBoolean(KEY_SHOW_TIME, true), sp.getBoolean(KEY_SHOW_DATE, true),
             sp.getBoolean(KEY_VERT_CLK, false), sp.getBoolean(KEY_ZERO_PAD, true),
-            sp.getInt(KEY_DATE_COLOR, NO_COLOR)
+            sp.getInt(KEY_DATE_COLOR, NO_COLOR),
+            sp.getFloat(KEY_DATE_DIM, 0f)
         )
     }
 
@@ -192,9 +200,20 @@ object WallpaperPrefs {
             e.putBoolean(KEY_VERT_CLK, p.verticalClock)
             e.putBoolean(KEY_ZERO_PAD, p.zeroPad)
             e.putInt(KEY_DATE_COLOR, p.dateColor)
+            e.putFloat(KEY_DATE_DIM, p.dateDim)
         }.apply()
 
-    private fun prefs(ctx: Context) = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+    /** Every preset owns its own permanently-separate storage. Preset 0 keeps using the
+     *  original, un-suffixed file names (so existing installs keep working unchanged);
+     *  every other preset gets its own dedicated, never-shared files. Nothing is ever
+     *  copied between presets — switching presets only changes which of these dedicated
+     *  files subsequent reads/writes resolve to. */
+    private fun scopedName(ctx: Context, base: String): String {
+        val id = getActivePreset(ctx)
+        return if (id == 0) base else "ew_p${id}_$base"
+    }
+
+    private fun prefs(ctx: Context) = ctx.getSharedPreferences(scopedName(ctx, PREFS), Context.MODE_PRIVATE)
 
     // ── Music Art ─────────────────────────────────────────────────────────────
     const val FILE_MUSIC_ART = "ew_music_art.png"
@@ -207,5 +226,32 @@ object WallpaperPrefs {
     fun setMusicArtEnabled(ctx: Context, v: Boolean) = metaPrefs(ctx).edit().putBoolean("music_art_enabled", v).apply()
     fun getMusicArtDim(ctx: Context) = metaPrefs(ctx).getFloat("music_art_dim", 0f)
     fun setMusicArtDim(ctx: Context, v: Float) = metaPrefs(ctx).edit().putFloat("music_art_dim", v).apply()
+    fun getMusicArtBlur(ctx: Context) = metaPrefs(ctx).getFloat("music_art_blur", 0f)
+    fun setMusicArtBlur(ctx: Context, v: Float) = metaPrefs(ctx).edit().putFloat("music_art_blur", v).apply()
     fun getMusicArtFile(ctx: Context) = java.io.File(ctx.filesDir, FILE_MUSIC_ART)
+
+    // ── Presets ──────────────────────────────────────────────────────────────
+    // Every preset has its own permanently-separate storage (see scopedName above).
+    // Switching presets only changes which dedicated storage subsequent reads/writes
+    // resolve to — nothing is ever copied, merged, or shared between presets, so
+    // customising one can never affect any other.
+    private const val KEY_PRESET_COUNT  = "preset_count"
+    private const val KEY_ACTIVE_PRESET = "active_preset"
+
+    fun getPresetCount(ctx: Context)  = metaPrefs(ctx).getInt(KEY_PRESET_COUNT, 1).coerceAtLeast(1)
+    fun getActivePreset(ctx: Context) = metaPrefs(ctx).getInt(KEY_ACTIVE_PRESET, 0)
+
+    /** Switches which preset's dedicated storage the editor and live wallpaper read from. */
+    fun switchToPreset(ctx: Context, newId: Int) {
+        metaPrefs(ctx).edit().putInt(KEY_ACTIVE_PRESET, newId).apply()
+    }
+
+    /** Creates a brand-new, completely blank preset (its storage has never been written
+     *  to, so every value resolves to its hard-coded default) and switches to it. */
+    fun addPreset(ctx: Context): Int {
+        val count = getPresetCount(ctx)
+        val newId = count // 0-indexed ids — "Preset 1" is id 0
+        metaPrefs(ctx).edit().putInt(KEY_PRESET_COUNT, count + 1).putInt(KEY_ACTIVE_PRESET, newId).apply()
+        return newId
+    }
 }
